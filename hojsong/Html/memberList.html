@@ -1,0 +1,27 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div class="container">
+ <div>
+ <table>
+ <thead>
+ <tr>
+  <th>ID</th>
+  <th>비밀번호</th>
+  <th>이름</th>
+  <th>등급</th>
+  </tr>
+  </thead>
+  <tbody>
+  <tr th:each="member : ${member}">
+  <td th:text="${member.id}"></td>
+  <td th:text="${member.password}"></td>
+   <td th:text="${member.name}"></td>
+  <td th:text="${member.vipbool}"></td>
+  </tr>
+  </tbody>
+  </table>
+  </div>
+ </div> <!-- /container -->
+ </body>
+ </html>
