@@ -1,5 +1,5 @@
-#ifndef HAED_HPP
-#define HEAD_HPP
+#ifndef MAINHEAD_HPP
+#define MAINHEAD_HPP
 
 #include <iostream>
 #include <unistd.h>
@@ -7,6 +7,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
+#include <netinet/in.h>
 #include <sys/errno.h>
 #include <arpa/inet.h>
 #include <sys/select.h>
@@ -17,18 +18,12 @@
 #include <signal.h>
 #include <sys/wait.h>
 #include <dirent.h>
-
-#include <stdexcept>
-#include <sstream>
 #include <string>
+#include <fstream>
+#include <cstring>
+#include <cstdlib>
 #include <vector>
 #include <algorithm>
-#include <deque>
-#include <list>
+#include "My_socket.hpp"
 
-#include "Member.hpp"
-#include "MemberRepository.hpp"
-
-#define PORT        3550
-#define PACKET_SIZE 1024
 #endif
