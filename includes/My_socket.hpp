@@ -9,27 +9,33 @@
 #include <netinet/in.h>
 #include <stdio.h>
 #include <fstream>
+#include <sstream>
 #include <cstring>
 #include <cstdlib>
 #include <vector>
+#include <map>
 
 class MemberRepository;
 
 class My_socket {
 	private:
-    	MemberRepository memberRepository;
-	    int 				serv_sock;
-	    std::vector<int> 	clnt_socks;
-	    struct sockaddr_in serv_addr;
-	    struct sockaddr_in clnt_addr;
-	    int result;
-
+    	MemberRepository 					*memberRepository;
+	    int 								serv_sock;
+	    int				 					clnt_sock;
+	    struct sockaddr_in				 	serv_addr;
+	    struct sockaddr_in 					clnt_addr;
+	    int 								result;
+		std::string							dir;
+		std::map<std::string, std::string> 	file;
 	public:
-    	My_socket(char **argv);
+    	My_socket(const char *argv, MemberRepository *mr);
+		void dir_indexing(const char *str);
     	virtual ~My_socket();
-    	std::string getPath(int clnt_sock);
+		int	getServSock();
+    	std::string getPath(char *buf);
     	int getResult(void) const;
-    	void execve_serv();
+    	int acceptClient();
+		void handleClientEvent();
 };
 
 #endif

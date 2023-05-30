@@ -11,7 +11,19 @@ std::string getHtml(std::istream& file) {
 	return content;
 }
 
-const char* getFilePath(char* buf, MemberRepository &mr) {
+std::string mapGet(std::string url, std::map<std::string, std::string> file){
+	std::map<std::string, std::string>::iterator it = file.find(url);
+	std::string value;
+	if (it != file.end()) {
+	    value = it->second;
+	} else {
+	    std::map<std::string, std::string>::iterator it = file.find("notFount");
+	    value = it->second;
+	}
+	return value;
+}
+
+const char* getFilePath(char* buf, MemberRepository *mr) {
 	const char* hostStart = std::strstr(buf, "Host: ");
 	const char* refererStart = std::strstr(buf, "GET ");
 	const char* result = NULL;  // 수정: 초기화
@@ -48,9 +60,9 @@ const char* getFilePath(char* buf, MemberRepository &mr) {
 	}
 	if (execveLogin(buf, mr) == true){
 		std::string findId = getValue(buf, "id=");
-		me = mr.findById(findId);
+		me = mr->findById(findId);
 	}
-	if (url == "/" || url == "/index")
+	if (url == "/" || url == "/home")
 		result = "./html/Home.html";
 	else if (url == "/members/logins")
 		result = "./html/loginMemberForm.html";
@@ -65,21 +77,10 @@ const char* getFilePath(char* buf, MemberRepository &mr) {
     return (result);
 }
 
-std::string  getFile(int clnt_sock, int &rehead, MemberRepository &mr) {
-	char buf[4096];
-    int bys = recv(clnt_sock, buf, sizeof(buf), 0);
-	// std::cout << buf << std::endl;
-	// std::cout << "-------------------" << std::endl;
-	std::string content;
+std::string  getFile(char *buf, int &rehead, MemberRepository *mr) {
 	Member me;
+	std::string content;
 	rehead = 200;
-    if (bys == -1){
-		rehead = 500;
-        return "";
-	}
-    else if (bys == 0){
-        return "";
-	}
 	if (ft_strncmp(buf, "GET ", 4) == 0){
 		std::ifstream file(getFilePath(buf, mr));
 		if (!file.is_open()){
@@ -93,13 +94,13 @@ std::string  getFile(int clnt_sock, int &rehead, MemberRepository &mr) {
 		content = str;
 	}
 	if (ft_strncmp(buf, "POST ", 4) == 0){
-    	std::string file(getPOSTPath(buf, rehead, mr));
+		std::string file(getPOSTPath(buf, rehead, mr));
 		if (file.length() == 0)
 		{
 			write (2, "Error\n", 6);
 			return "";
 		}
-    	content = file;
+		content = file;
 	}
-    return content;
+	return content;
 }

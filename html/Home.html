@@ -4,8 +4,9 @@
             <div>
                 <h1>Hello WebServ</h1>
                 <p>회원 기능</p>
-                <p th:text="${name}"></p>
-                <p th:text="${grade}"></p>
+                <input type="text" name="id" id="id" style="display:none" th:value="${id}"></p>
+                <text type="text" name="name" id="name" value="${name}"></p>
+                <input type="text" name="login" id="login" style="display:none" value=0></p>
                 <p>
                     <a href="/members/logins">로그인</a>
                 </p>

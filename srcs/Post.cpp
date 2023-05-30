@@ -37,39 +37,39 @@ std::string getValue(char *buf, const char *value){
 	return findvalue;
 }
 
-bool	execveID_CHK(char *buf, MemberRepository &mr){
+bool	execveID_CHK(char *buf, MemberRepository *mr){
 	Member find;
 	std::string findId = getValue(buf, "id=");
-	find = mr.findById(findId);
+	find = mr->findById(findId);
 	if (find.getById().length() == 0)
 		return (true);
 	else
 		return (false);
 }
 
-bool	execveSAVE(char *buf, MemberRepository &mr){
+bool	execveSAVE(char *buf, MemberRepository *mr){
 	Member find;
 	std::string findId = getValue(buf, "id=");
 	std::string findPassword = getValue(buf, "password=");
 	std::string findName = getValue(buf, "name=");
-	find = mr.findById(findId);
+	find = mr->findById(findId);
 	if (find.getById().length() != 0 || findPassword.length() < 4 ||
 		findId.length() < 3 || findName.length() == 0)
 		return false;
-	mr.addMember(findId, findPassword, findName);
+	mr->addMember(findId, findPassword, findName);
 	return true;
 }
 
-bool	execveLogin(char *buf, MemberRepository &mr){
+bool	execveLogin(char *buf, MemberRepository *mr){
 	Member find;
 	std::string findId = getValue(buf, "login_id=");
 	std::string findPassword = getValue(buf, "login_password=");
-	find = mr.findById(findId);
+	find = mr->findById(findId);
 	if (find.getById().length() == 0)
 		return (false);
 	if (findId.length() == 0)
 		return (false);
-	return (mr.login(findId, findPassword));
+	return (mr->login(findId, findPassword));
 }
  
 void	text_change(std::string& str, const std::string findstr, const std::string value){
@@ -96,9 +96,9 @@ void	create_changer(char *buf, std::string &str, bool set){
 		text_change(str, "th:text=\"${message}\">", ">사용 가능한 ID입니다.");
 	else
 		text_change(str, "th:text=\"${message}\">", ">사용 불가능한 ID입니다.");
-}	
+}
 
-std::string getPOSTPath(char *buf, int &rehead, MemberRepository &mr){
+std::string getPOSTPath(char *buf, int &rehead, MemberRepository *mr){
 	const char* refererStart = std::strstr(buf, "POST ");
 	std::string result = "";
 	std::string url;
@@ -141,7 +141,7 @@ std::string getPOSTPath(char *buf, int &rehead, MemberRepository &mr){
 				rehead = 101;
 				return "";
 			}
-			result = getHtml(file);
+			result = cookie_add(buf) + getHtml(file);
 			rehead = 200;
 			file.close();
 		}

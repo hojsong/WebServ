@@ -29,13 +29,16 @@ std::string get_header(int status, std::string &content){
 		std::ifstream file("./html/500.html");
 		std::string str = getHtml(file);
 		std::string str_size = std::to_string(str.length());
-		result = "nternal Server Error\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: " + str_size + "\r\n\r\n" + str;
+		result = "HTTP/1.1 500 internal Server Error\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: " + str_size + "\r\n\r\n" + str;
 	}
 	return(result);
 }
 
-void head_plus (std::string &content, int status){
-	std::string get_h = get_header(status, content);
-	content = get_h;
+void 		head_plus (std::string &content, int status){
+    std::string response_header = get_header(status, content);
+    content = response_header;
 }
 
+std::string cookie_add(char *buf){
+
+}

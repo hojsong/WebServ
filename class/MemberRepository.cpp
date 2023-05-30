@@ -26,6 +26,7 @@ bool MemberRepository::login(std::string id, std::string password){
 	Member loginmember;
 
 	loginmember = findById(id);
+	std::cout << loginmember.getById() << std::endl;
 	if (loginmember.getById().length() == 0)
 		return (false);
 	else if (loginmember.getPassword() != password)

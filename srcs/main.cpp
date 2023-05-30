@@ -1,17 +1,14 @@
-#include "../includes/My_socket.hpp"
-
+#include "../includes/Serv.hpp"
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <string>
 int ErrorPrint(const char *str);
 int init_fail(My_socket my_so);
 
-int main(int argc, char **argv){
-	(void)argc;
-	My_socket my_so(argv);
-	
-	if (init_fail(my_so) == 1)
-		return (1);
-	while(1){
-		my_so.execve_serv();
-	}
+int main(){
+	Serv server;
+	server.exe_Serv();
 	return (0);
 }
 
