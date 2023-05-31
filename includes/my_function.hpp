@@ -25,9 +25,10 @@ std::string getHtml(std::istream& file);
 std::string getFile(char *buf, int &rehead, MemberRepository *mr);
 std::string getPOSTPath(char *buf, int &rehead, MemberRepository *mr);
 Member 		membersLogin(char *buf, MemberRepository *mr);
-void 		head_plus (std::string &content, int status);
-std::string get_header(int status, std::string &content);
-std::string cookie_add(char *buf);
+void 		head_plus (std::string &content, int status, char *buf, MemberRepository *mr);
+std::string get_header(int status, std::string &content, char *buf);
+std::string cookie_add(char *buf, MemberRepository *mr);
+Member get_cookie(char *buf, MemberRepository *mr);
 
 
 

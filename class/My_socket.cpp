@@ -47,7 +47,7 @@ void My_socket::dir_indexing(const char *str) {
 	        	this->dir = value;
 	    	else
 	    	    this->file[key] = dir + value;
-			std::cout << "key: " << key << ", value: " << value << std::endl;
+			// std::cout << "key: " << key << ", value: " << value << std::endl;
 		}
 	}
 }
@@ -124,7 +124,7 @@ std::string My_socket::getPath(char *buf) {
     std::string content = getFile(buf, rehead, this->memberRepository);
 	if (content.length() == 0 || rehead <= 0)
 		return "";
-	head_plus(content, rehead);
+	head_plus(content, rehead, buf, this->memberRepository);
     return content;
 }
 

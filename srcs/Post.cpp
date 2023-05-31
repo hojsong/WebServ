@@ -141,7 +141,7 @@ std::string getPOSTPath(char *buf, int &rehead, MemberRepository *mr){
 				rehead = 101;
 				return "";
 			}
-			result = cookie_add(buf) + getHtml(file);
+			result = getHtml(file);
 			rehead = 200;
 			file.close();
 		}

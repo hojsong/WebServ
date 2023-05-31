@@ -58,10 +58,8 @@ const char* getFilePath(char* buf, MemberRepository *mr) {
     else{
 		return NULL;
 	}
-	if (execveLogin(buf, mr) == true){
-		std::string findId = getValue(buf, "id=");
-		me = mr->findById(findId);
-	}
+	if (getValue(buf, "Cookie: login_id=").length() != 0)
+		me = get_cookie(buf, mr);
 	if (url == "/" || url == "/home")
 		result = "./html/Home.html";
 	else if (url == "/members/logins")
@@ -74,6 +72,8 @@ const char* getFilePath(char* buf, MemberRepository *mr) {
 		result = "./html/adminError.html";
 	else if (url == "/loginError")
 		result = "./html/loginError.html";
+	else if (url == "/upload")
+		result = "./html/upload.html";
     return (result);
 }
 
