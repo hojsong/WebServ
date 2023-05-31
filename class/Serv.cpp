@@ -26,7 +26,8 @@ Serv::Serv() {
             const char* port_end = strstr(port_start, ";");
             std::string port_str(port_start, port_end - port_start);
             My_socket socket(port_str.c_str(), &this->memberRepository);  // 필요한 인수를 전달하여 객체 생성
-
+            if (socket.getResult() != 0)
+                exit(1);
             const char* location_pos = strstr(conf[i].c_str(), "location / {");
             if (location_pos) {
                 const char* location_start = location_pos + std::strlen("location / {");
@@ -34,7 +35,6 @@ Serv::Serv() {
                 std::string location(location_start, location_end - location_start);
                 socket.dir_indexing(location.c_str());
             }
-
             this->servs.push_back(socket);
         }
     }
@@ -55,9 +55,13 @@ void Serv::exe_Serv() {
 	
 	struct kevent changeList[MAX_EVENTS];
     int changeCount = 8;
-	
+	struct timespec timeout;
+    timeout.tv_sec = 1;  // 1초
+    timeout.tv_nsec = 0;
+
     while (1) {
-        num_events = kevent(this->kq, events, servs.size(), changeList, changeCount, 0);
+        num_events = kevent(this->kq, events, servs.size(), changeList, changeCount, &timeout);
+        std::cout << "num_events : " << num_events << std::endl;
         if (num_events == -1) {
 			std::cout << "Error Break" << std::endl;
 			break ;
@@ -73,7 +77,6 @@ void Serv::exe_Serv() {
                 }
             }
         }
-
         if (changeCount > MAX_EVENTS) {
             changeCount = 0;
         }
