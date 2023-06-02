@@ -177,6 +177,7 @@ void    Server::initErrorPages(void)
     error_pages[200] = "";
 	error_pages[301] = "";
 	error_pages[302] = "";
+    error_pages[303] = "";
 	error_pages[400] = "";
 	error_pages[401] = "";
 	error_pages[402] = "";
@@ -197,6 +198,7 @@ void    Server::initErrorPagesHeader(void)
 	error_pages_header[200] = "HTTP/1.1 200 OK";
 	error_pages_header[301] = "HTTP/1.1 301 Moved Permanently";
 	error_pages_header[302] = "HTTP/1.1 302 Found";
+    error_pages_header[303] = "HTTP/1.1 303 See Other";
 	error_pages_header[400] = "HTTP/1.1 400 Bad Request";
 	error_pages_header[401] = "HTTP/1.1 401 Unauthorized";
 	error_pages_header[402] = "HTTP/1.1 402 Payment Required";

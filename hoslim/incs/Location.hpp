@@ -9,9 +9,8 @@ class Location {
 		std::string					root;
 		std::string					index;
 		std::vector<int>			methods; //0:GET 1:POST 2:DELETE 3:PUT 4:HEAD
-		std::string					return_value;
+		std::vector<std::string>	return_value;
 		std::string					alias;
-		std::vector<std::string>	try_files;
 		std::vector<std::string>	cgi_path;
 		std::vector<std::string>	cgi_text;
 		bool						autoindex;
@@ -27,9 +26,8 @@ class Location {
 		void	setAutoindex(std::string param);
 		void	setIndex(std::string param);
 		void	setMethods(std::vector<std::string> param);
-		void	setReturnValue(std::string param);
+		void	setReturnValue(std::vector<std::string> param);
 		void	setAlias(std::string param);
-		void	setTryFiles(std::vector<std::string> param);
 		void	setCgiPath(std::vector<std::string> param);
 		void	setCgiText(std::vector<std::string> param);
 		void	setClntMaxBodySize(std::string param);
@@ -40,9 +38,8 @@ class Location {
 		bool						getAutoindex(void);
 		std::string					getIndex(void);
 		std::vector<int>			getMethods(void);
-		std::string					getReturnValue(void);
+		std::vector<std::string>	getReturnValue(void);
 		std::string					getAlias(void);
-		std::vector<std::string>	getTryFiles(void);
 		std::vector<std::string>	getCgiPath(void);
 		std::vector<std::string>	getCgiText(void);
 		unsigned long				getClntMaxBodySize(void);

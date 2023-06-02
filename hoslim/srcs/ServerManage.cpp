@@ -83,26 +83,28 @@ bool    isDirect(Server server, Location loc, std::string request_path) {
 
     std::string buffer = server.getRoot() + loc.getPath();
     dir = opendir(buffer.c_str());
-    while ((dp = readdir(dir)) != NULL) {
+    dp = readdir(dir);
+    while (dp != NULL) {
         std::string dir_name(dp->d_name);
         std::string rootpath = "./" + server.getRoot() + loc.getPath() + "/";
         if (request_path == rootpath + dir_name) {
             closedir(dir);
             return true;
         }
+        dp = readdir(dir);
     }
     closedir(dir);
     return false;
 }
 
-std::string makeBody(Server server, Request request, Location loc, int& error_flag) {
+std::string makeBody(Server server, std::string request_path, Location loc, int& error_flag) {
     std::map<int, std::string> errors = server.getErrorPages();
     if (error_flag != 200)
         return errors.find(error_flag)->second;
 
     std::string body;
-    if (isDirect(server, loc, "." + request.getPath()) == true) {
-        std::string file_path = "." + request.getPath();
+    if (isDirect(server, loc, "." + request_path) == true) {
+        std::string file_path = "." + request_path;
         body = readFilePath(file_path, errors);
         return body;
     } else if (loc.getAutoindex() == true) {
@@ -193,27 +195,43 @@ Request processRequest(const char *buffer, ssize_t len) {
     return req;
 }
 
-void    sendResponse(int client_fd, Server &server, Request &req, int error_flag) {
+void    sendResponse(int client_fd, Server &server, std::string req_path, int error_flag) {
     std::vector<Location>  locs = server.getLocations();
     std::string body;
     std::string response;
     bool    is_404 = true;
 
-    if (error_flag != 200) {
-        body = makeBody(server, req, locs[0], error_flag);
+    if (error_flag > 400) { // 원래는 200
+        body = makeBody(server, req_path, locs[0], error_flag);
         response = buildResponse(body, locs[0], server, error_flag);
         write(client_fd, response.c_str(), response.size());
         return ;
     }
     size_t i;
     for (i = 0; i < locs.size(); i++) {
-        if (locs[i].getPath() == req.getPath()) {
-            body = makeBody(server, req, locs[i], error_flag);
-            response = buildResponse(body, locs[i], server, error_flag);
+        if (locs[i].getPath() == req_path) {
+            Location    target = locs[i];
+            if (target.getReturnValue().size() == 2) {
+                std::vector<std::string> buf = target.getReturnValue();
+
+                int head_number = atoi(buf[0].c_str());
+                std::string return_path = buf[1];
+                response = buildResponse(body, target, server, head_number);
+                std::cout << response << std::endl;
+                std::cout << return_path << std::endl;
+                // 303 처리에 대한 문제점 : 한 fd당 한번의 send만 가능하나
+                // 303 send 후 다시 리다이렉션시 소켓이 끊김
+                // write(client_fd, response.c_str(), response.size());
+
+                sendResponse(client_fd, server, return_path, 200);
+                return ;
+            }
+            body = makeBody(server, req_path, target, error_flag);
+            response = buildResponse(body, target, server, error_flag);
             is_404 = false;
             break;
-        }  else if (isDirect(server, locs[i], "." + req.getPath()) == true) {
-            body = makeBody(server, req, locs[i], error_flag);
+        }  else if (locs[i].getAutoindex() == true && isDirect(server, locs[i], "." + req_path) == true) {
+            body = makeBody(server, req_path, locs[i], error_flag);
             response = buildResponse(body, locs[i], server, error_flag);
             is_404 = false;
             break;
@@ -221,39 +239,39 @@ void    sendResponse(int client_fd, Server &server, Request &req, int error_flag
     }
     if (is_404 == true) {
         error_flag = 404;
-        body = makeBody(server, req, locs[0], error_flag);
+        body = makeBody(server, req_path, locs[0], error_flag);
         response = buildResponse(body, locs[0], server, error_flag);
     }
+    std::cout << response << std::endl;
     write(client_fd, response.c_str(), response.size());
 }
 
 
-void    executeMethodPut(char buffer[], ssize_t len, std::string req_path, std::vector<int> server_list, Server serv, Request req) {
+void    executeMethodPut(char buffer[], ssize_t len, std::vector<int> server_list, Server serv, std::string req_path) {
     std::string content(buffer + len, BUFFER_SIZE - len);
     std::fstream file(req_path, std::ios::out);
     if (file.is_open()) {
         file.write(content.c_str(), content.size());
         file.close();
-        sendResponse(server_list.back(), serv, req, 200);
+        sendResponse(server_list.back(), serv, req_path, 200);
     } else {
-        sendResponse(server_list.back(), serv, req, 500);
+        sendResponse(server_list.back(), serv, req_path, 500);
     }
 }
 
-void    executeMethodDelete(std::string req_path, std::vector<int> server_list, Server serv, Request req) {
+void    executeMethodDelete(std::vector<int> server_list, Server serv, std::string req_path) {
     std::ifstream ifs(req_path.c_str());
 
     if (!ifs.good()) {
-        sendResponse(server_list.back(), serv, req, 404);
+        sendResponse(server_list.back(), serv, req_path, 404);
         return ;
     }
-
     ifs.close();
 
     if (unlink(req_path.c_str()) == 0) {
-        sendResponse(server_list.back(), serv, req, 200);
+        sendResponse(server_list.back(), serv, req_path, 200);
     } else {
-        sendResponse(server_list.back(), serv, req, 500);
+        sendResponse(server_list.back(), serv, req_path, 500);
     }
 
 }
@@ -347,7 +365,7 @@ void handle_cgi(int sockfd, Request req) {
 
     // 출력 데이터를 클라이언트로 보냅니다.
     std::string response = header + output;
-    std::cout << response << std::endl;
+    // std::cout << response << std::endl;
     if (write(sockfd, response.c_str(), response.size()) == -1) {
         perror("send");
         exit(EXIT_FAILURE);
@@ -442,6 +460,7 @@ void    ServerManage::runServer(void) {
                     ssize_t len = readData(server_list.back(), buffer, BUFFER_SIZE);
                     if (len > 0) {
                         Request     req = processRequest(buffer, len);
+                        std::string req_path = req.getPath();
                         std::string req_method = req.getMethod();
                         // if (req_method == "POST") {
                         //     std::string post_buffer(buffer, len);
@@ -451,21 +470,20 @@ void    ServerManage::runServer(void) {
                         //         req.setBody(post_body);
                         //     }
                         // }
-                        std::string req_path = "." + req.getPath();
 
                         if (req_method == "GET")
-                            sendResponse(server_list.back(), serv[index], req, 200);
+                            sendResponse(server_list.back(), serv[index], req_path, 200);
                         else if (req_method == "PUT")
-                            executeMethodPut(buffer, len, req_path, server_list, serv[index], req);
+                            executeMethodPut(buffer, len, server_list, serv[index], req_path);
                         else if (req_method == "DELETE")
-                            executeMethodDelete(req_path, server_list, serv[index], req);
-                        else if (req_method == "POST")
-                            handle_cgi(server_list.back(), req);
+                            executeMethodDelete(server_list, serv[index], req_path);
+                        // else if (req_method == "POST")
+                        //     handle_cgi(server_list.back(), req);
                             // executeMethodPost(server_list.back(), serv[index], req, buffer, len);
                         else if (req_method == "HEAD")
                             executeMethodHead(server_list.back(), serv[index], 200);
                         else
-                            sendResponse(server_list.back(), serv[index], req, 405);
+                            sendResponse(server_list.back(), serv[index], req_path, 405);
                     }
                 } else if (event_list[i].filter == EVFILT_WRITE) {
                     char    buffer[BUFFER_SIZE];

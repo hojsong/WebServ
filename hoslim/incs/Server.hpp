@@ -37,7 +37,7 @@ class Server {
         void    setAutoindex(std::string param);
         void    setErrorPages(std::vector<std::string> param);
         void    setListenFd(std::string param);
-        void    setTryFiles(std::vector<std::string> param);
+        // void    setTryFiles(std::vector<std::string> param);
         void    setLocation(std::vector<Location> params);
         void    setServerAddress(void);
 
@@ -52,7 +52,7 @@ class Server {
         std::map<int, std::string>      getErrorPages(void);
         std::map<int, std::string>      getErrorPagesHeader(void);
         int                             getListenFd(void);
-        std::vector<std::string>        getTryFiles(void);
+        // std::vector<std::string>        getTryFiles(void);
         std::vector<Location>           getLocations(void);
         struct sockaddr_in*             getServerAddress(void);
 

@@ -4,7 +4,6 @@ Location::Location(void) {
     path = "";
     root = "";
     index = "";
-    return_value = "";
     alias = "";
     client_max_body_size = 2147483647;
     autoindex = false;
@@ -87,16 +86,12 @@ void	Location::setMethods(std::vector<std::string> param) {
     methods = buffer;
 }
 
-void	Location::setReturnValue(std::string param) {
+void	Location::setReturnValue(std::vector<std::string> param) {
     return_value = param;
 }
 
 void	Location::setAlias(std::string param) {
     alias = param;
-}
-
-void    Location::setTryFiles(std::vector<std::string>  param) {
-    try_files = param;
 }
 
 void	Location::setCgiPath(std::vector<std::string> param) {
@@ -133,16 +128,12 @@ std::vector<int>	Location::getMethods(void) {
     return methods;
 }
 
-std::string	Location::getReturnValue(void) {
+std::vector<std::string>	Location::getReturnValue(void) {
     return return_value;
 }
 
 std::string	Location::getAlias(void) {
     return alias;
-}
-
-std::vector<std::string>    Location::getTryFiles(void) {
-    return try_files;
 }
 
 std::vector<std::string>	Location::getCgiPath(void) {
@@ -162,7 +153,9 @@ void    Location::print(void) {
     std::cout << "path: " << path << std::endl;
     std::cout << "root: " << root << std::endl;
     std::cout << "index: " << index << std::endl;
-    std::cout << "return_value" << return_value << std::endl;
+    std::cout << "return_value: " << std::endl;
+    for (std::vector<std::string>::iterator iter = return_value.begin(); iter != cgi_path.end(); iter++)
+        std::cout << "\t" << *iter << std::endl;
     std::cout << "alias: " << alias << std::endl;
     std::cout << "autoindex: " << autoindex << std::endl;
     std::cout << "max body size: " << client_max_body_size << std::endl;

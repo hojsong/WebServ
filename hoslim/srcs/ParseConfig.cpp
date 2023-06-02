@@ -155,24 +155,28 @@ void	ParseConfig::createServer(std::string& config, Server& serv) {
 					loc.setRoot(arg[++i]);
 				else if (arg[i] == "index")
 					loc.setIndex(arg[++i]);
-				else if (arg[i] == "return")
-					loc.setReturnValue(arg[++i]);
+				else if (arg[i] == "return") {
+					std::vector<std::string>	files;
+
+					while (i < arg.size()) {
+						std::string param = arg[++i];
+						size_t pos = param.find(';');
+						if (pos != std::string::npos)
+							param = param.substr(0, pos);
+						files.push_back(param);
+						if (pos != std::string::npos)
+							break ;
+					}
+					if (i == arg.size())
+						throw ErrorException("location return");
+					if (files.size() != 2)
+						throw ErrorException("location return");
+					loc.setReturnValue(files);
+				}
 				else if (arg[i] == "alias")
 					loc.setAlias(arg[++i]);
 				else if (arg[i] == "autoindex")
 					loc.setAutoindex(arg[++i]);
-				else if (arg[i] == "try_files") {
-					std::vector<std::string>	files;
-
-					while (i < arg.size()) {
-						files.push_back(arg[++i]);
-						if (arg[i].find(';') != std::string::npos)
-							break ;
-					}
-					if (i == arg.size())
-						throw ErrorException("location try_files");
-					loc.setTryFiles(files);
-				}
 				else if (arg[i] == "cgi_path") {
 					std::vector<std::string>	paths;
 
