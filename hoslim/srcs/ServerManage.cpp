@@ -474,9 +474,9 @@ void    ServerManage::runServer(void) {
                         if (req_method == "GET")
                             sendResponse(server_list.back(), serv[index], req_path, 200);
                         else if (req_method == "PUT")
-                            executeMethodPut(buffer, len, server_list, serv[index], req_path);
+                            executeMethodPut(buffer, len, server_list, serv[index], "." + req_path);
                         else if (req_method == "DELETE")
-                            executeMethodDelete(server_list, serv[index], req_path);
+                            executeMethodDelete(server_list, serv[index], "." + req_path);
                         // else if (req_method == "POST")
                         //     handle_cgi(server_list.back(), req);
                             // executeMethodPost(server_list.back(), serv[index], req, buffer, len);
