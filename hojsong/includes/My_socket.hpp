@@ -19,14 +19,14 @@ class MemberRepository;
 
 class My_socket {
 	private:
-        std::vector<Location>   	locations;
+        // std::vector<Location>   	locations;
     	MemberRepository 			*memberRepository;
-		std::string                 server_name;
-        std::string                 root;
-        std::string                 index;
-        uint16_t               		port;
-        in_addr_t                   host;
-        bool                        autoindex;
+		// std::string                 server_name;
+        // std::string                 root;
+        // std::string                 index;
+        // uint16_t               		port;
+        // in_addr_t                   host;
+        // bool                        autoindex;
 	    int 						serv_sock;
 	    int				 			clnt_sock;
 	    struct sockaddr_in			serv_addr;

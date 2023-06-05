@@ -41,13 +41,13 @@ void My_socket::dir_indexing(const char *str) {
     	lineStream >> key >> value;
 		if (key.length() == 0 || value.length() == 0)
 			;
-		else {
-    		if (key == "root")
-	        	this->dir = value;
-	    	else
-	    	    this->file[key] = dir + value;
-			// std::cout << "key: " << key << ", value: " << value << std::endl;
-		}
+		// else {
+    	// 	if (key == "root")
+	    //     	this->dir = value;
+	    // 	else
+	    // 	    this->file[key] = dir + value;
+		// 	// std::cout << "key: " << key << ", value: " << value << std::endl;
+		// }
 	}
 }
 

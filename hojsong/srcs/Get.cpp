@@ -74,10 +74,81 @@ const char* getFilePath(char* buf, MemberRepository *mr) {
 	return (result);
 }
 
+void saveToFile(MemberRepository *mr, const std::string& filename) {
+    std::ofstream file(filename);
+    if (file.is_open()) {
+        for (size_t i = 0; i < mr->getMemberSize(); i++){
+			Member mem = mr->getNumMember(i);
+			file << "id=" << mem.getById();
+			file << "&password=" << mem.getPassword();
+			file << "&name=" << mem.getName();
+			file << "&grade=" << mem.getGrade();
+			file << "&\n";
+		}
+        file.close();
+	}
+}
+
+void deleteFile(const std::string& filename) {
+    unlink(filename.c_str());
+}
+
+std::string cgi_execve(char *buf, MemberRepository *mr){
+	deleteFile("memberdb.txt");
+	saveToFile(mr, "memberdb.txt");
+	int cgiInput[2], cgiOutput[2];
+    pid_t pid;
+    std::string cgi_output = "";
+    int status;
+    if (pipe(cgiInput) < 0 || pipe(cgiOutput) < 0) {
+        perror("pipe error");
+        return "";
+    }
+    if ((pid = fork()) < 0) {
+        perror("fork error");
+        return "";
+    }
+    if (pid == 0) {
+        dup2(cgiInput[0], 0);
+        dup2(cgiOutput[1], 1);
+        close(cgiInput[1]);
+        close(cgiOutput[0]);
+        char *execPath = const_cast<char*>("a.out");
+    	char *args[] = {execPath, buf, NULL};
+        execve(execPath, args, NULL);
+        exit(0);
+    }
+    else {
+        close(cgiInput[0]);
+        close(cgiOutput[1]);
+        // write(cgiInput[1], req.getBody().c_str(), req.getBody().size());
+        close(cgiInput[1]);
+        char buf[1024];
+        ssize_t bytesRead;
+        while ((bytesRead = read(cgiOutput[0], buf, sizeof(buf))) > 0) {
+            cgi_output.append(buf, bytesRead);
+        }
+        close(cgiOutput[0]);
+        waitpid(pid, &status, 0);
+        std::cout << "-------------CGI OUTPUT-------------" << std::endl;
+        std::cout << cgi_output << std::endl;
+        std::cout << "------------------------------------" << std::endl;
+    }
+	return cgi_output;
+}
+
+
 std::string  getFile(char *buf, int &rehead, MemberRepository *mr) {
 	Member me;
 	std::string content;
 	rehead = 200;
+	// int pid;
+
+	content = cgi_execve(buf, mr);
+	saveToFile(mr, "memberdb.txt");
+
+	if (content.length() != 0)
+		return content;
 	if (ft_strncmp(buf, "GET ", 4) == 0){
 		std::ifstream file(getFilePath(buf, mr));
 		if (!file.is_open()){
