@@ -39,7 +39,7 @@ std::string cgi_execve(char *buf, MemberRepository *mr){
         dup2(cgiOutput[1], 1);
         close(cgiInput[1]);
         close(cgiOutput[0]);
-        char *execPath = const_cast<char*>("a.out");
+        char *execPath = const_cast<char*>("cgi.exe");
     	char *args[] = {execPath, buf, NULL};
         execve(execPath, args, NULL);
         exit(0);
