@@ -3,7 +3,9 @@
 int main(int argc, char **argv){
 	MemberRepository mr;
 	std::string url;
-
+	if (argc != 2)
+		return (0);
+		
 	readFile("memberdb.txt", &mr);
 	// readMR(&mr);
 	// std::cout << "MemberReposytort Get End" << std::endl;
