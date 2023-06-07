@@ -35,6 +35,9 @@ std::string getHtml(std::istream& file);
 std::string getFile(char *buf, MemberRepository *mr);
 void 		exe_member_list(std::string &str, MemberRepository *mr);
 void		deleteFile(const std::string& filename);
+void		exe_Error_page(char *buf, int button, MemberRepository *mr);
+
+
 
 
 

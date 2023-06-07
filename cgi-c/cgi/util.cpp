@@ -157,7 +157,7 @@ bool	execveLogin(char *buf, MemberRepository *mr){
 }
 
 bool GetBool(char *buf,MemberRepository *mr){
-	bool exe = false;
+	bool exe = true;
 	int button = getButton(buf);
 	
 	if (button == 2){
@@ -192,12 +192,12 @@ std::string getFile(char *buf, MemberRepository *mr){
 		return "";
 	if (url == "/members/new" && button == 1)
 		filename = "./html/createMemberForm.html";
-	// else if (url == "/members/new")
-		// filename = "./html/Home.html";
+	else if (url == "/members/new")
+		filename = "./html/Home.html";
 	else if (url == "/members")
 		filename = "./html/memberList.html";	
-	// else if (url == "/members/logins")
-		// result = "./html/loginMemberForm.html";
+	else if (url == "/members/logins")
+		filename = "./html/Home.html";
 	else
 		return "";
 	std::string result;
