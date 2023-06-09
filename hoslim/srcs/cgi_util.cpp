@@ -75,8 +75,10 @@ std::string cgi_differentiation(char *buf, MemberRepository *mr){
     std::string url = GetUrl(buf);
     if (method == 1 && url == "/members")
         result = hj_cgi_execve(buf, mr);
-    else if (method == 2 && url == "/members/new")
+    else if (method == 2 && url == "/members/new"){
         result = hj_cgi_execve(buf, mr);
+        execveSAVE(buf, mr);
+    }
     else if (method == 2 && url == "/members/logins")
         result = hj_cgi_execve(buf, mr);
     else
@@ -94,11 +96,11 @@ std::string hj_cgi_execve(char *buf, MemberRepository *mr){
     int status;
     if (pipe(cgiInput) < 0 || pipe(cgiOutput) < 0) {
         perror("pipe error");
-        return ;
+        return "";
     }
     if ((pid = fork()) < 0) {
         perror("fork error");
-        return ;
+        return "";
     }
     if (pid == 0) {
         dup2(cgiInput[0], 0);
@@ -129,3 +131,35 @@ std::string hj_cgi_execve(char *buf, MemberRepository *mr){
 	return cgi_output;
 }
 
+std::string getPostValue(char *buf, const char *value){
+	const char* rvalue = std::strstr(buf, value);
+	std::string findvalue;
+	if (rvalue != NULL)
+    {
+        const char* valueStart = rvalue + std::strlen(value);
+        const char* valueEnd = std::strstr(valueStart, "&");
+		if (valueStart == valueEnd)
+			return "";
+        if (valueEnd != NULL)
+            findvalue = std::string(valueStart, valueEnd - valueStart);
+        else{
+			return "";
+		}
+    }
+    else{
+		return "";
+	}
+	return findvalue;
+}
+
+void	execveSAVE(char *buf, MemberRepository *mr){
+	Member find;
+	std::string findId = getPostValue(buf, "id=");
+	std::string findPassword = getPostValue(buf, "password=");
+	std::string findName = getPostValue(buf, "name=");
+	find = mr->findById(findId);
+	if (find.getById().length() != 0 || findPassword.length() < 4 ||
+		findId.length() < 3 || findName.length() == 0)
+		return ;
+	mr->addMember(findId, findPassword, findName);
+}

@@ -37,7 +37,7 @@ $(NAME) : $(OBJS) $(INCS)
 	$(CXX) $(FLAG) -I $(INCS) -o $(NAME) $(OBJS)
 
 $(NAME2) : $(OBCS) $(CNCS)
-	$(CXX) $(FLAG) -I $(CNCS) -o $(NAME2) $(OBJS)
+	$(CXX) $(FLAG) -I $(CNCS) -o $(NAME2) $(OBCS)
 
 all : $(NAME) $(NAME2)
 
