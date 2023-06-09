@@ -15,6 +15,9 @@ Server::Server() {
 
 Server::~Server() {}
 
+void    Server::setMemberRepository(MemberRepository *mr){
+    this->memberRepository = mr;
+}
 //setter
 void    Server::setServerName(std::string param) {
     size_t pos = param.find(';');
@@ -172,6 +175,10 @@ struct sockaddr_in*  Server::getServerAddress(void) {
     return &server_address;
 }
 
+MemberRepository*   Server::getMemberRepository(void){
+    return this->memberRepository;
+}
+
 void    Server::initErrorPages(void)
 {
     error_pages[200] = "";
@@ -242,3 +249,4 @@ void    Server::print(void) {
     }
 
 }
+

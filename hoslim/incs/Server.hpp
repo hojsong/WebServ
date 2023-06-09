@@ -6,12 +6,13 @@
 static std::string serverParams[] = {"server_name", "listen", "root", "index", "allow_methods", "client_body_buffer_size"};
 
 class Location;
+class MemberRepository;
 
 class Server {
     private:
         // Connection connect;
-        std::vector<Location>   locations;
-
+        std::vector<Location>       locations;
+        MemberRepository 			*memberRepository;
         std::string                 server_name;
         std::string                 root;
         std::string                 index;
@@ -28,6 +29,7 @@ class Server {
         ~Server();
 
         //setter
+        void    setMemberRepository(MemberRepository *mr);
         void    setServerName(std::string param);
         void    setRoot(std::string param);
         void    setIndex(std::string param);
@@ -55,6 +57,7 @@ class Server {
         // std::vector<std::string>        getTryFiles(void);
         std::vector<Location>           getLocations(void);
         struct sockaddr_in*             getServerAddress(void);
+        MemberRepository*               getMemberRepository(void);
 
         void    initErrorPages(void);
         void    initErrorPagesHeader(void);

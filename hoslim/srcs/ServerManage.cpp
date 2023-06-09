@@ -201,6 +201,7 @@ void    sendResponse(int client_fd, Server &server, std::string req_path, int er
     std::string response;
     bool    is_404 = true;
 
+    //GET cgi가 필요하면 cgi_differentiation(buf(recvData), server->getMemberRepository()); 호출
     if (error_flag > 400) { // 원래는 200
         body = makeBody(server, req_path, locs[0], error_flag);
         response = buildResponse(body, locs[0], server, error_flag);
