@@ -81,6 +81,8 @@ std::string cgi_differentiation(char *buf, MemberRepository *mr){
     }
     else if (method == 2 && url == "/members/logins")
         result = hj_cgi_execve(buf, mr);
+    else if (method == 2 && url == "/upload/file")
+        result = hj_cgi_execve(buf, mr);
     else
         ;
     return (result);

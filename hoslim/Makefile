@@ -22,13 +22,17 @@ CGIS = \
 	cgi/cgi_exe.cpp \
 	cgi/util.cpp \
 	cgi/Member.cpp \
-	cgi/MemberRepository.cpp
+	cgi/MemberRepository.cpp \
+	cgi/file_post.cpp
 INCS = \
 	./incs/
 CNCS = \
 	./cgi/
+
 OBJS = $(SRCS:.cpp=.o)
 OBCS = $(CGIS:.cpp=.o)
+
+all : $(NAME) $(NAME2)
 
 %.o : %.cpp
 	$(CXX) $(FLAG) -I $(INCS) -c $< -o $@
@@ -39,10 +43,9 @@ $(NAME) : $(OBJS) $(INCS)
 $(NAME2) : $(OBCS) $(CNCS)
 	$(CXX) $(FLAG) -I $(CNCS) -o $(NAME2) $(OBCS)
 
-all : $(NAME) $(NAME2)
-
 clean :
 	$(RM) $(OBJS)
+	$(RM) $(OBCS)
 
 fclean : clean
 	$(RM) $(NAME)

@@ -36,6 +36,9 @@ std::string getFile(char *buf, MemberRepository *mr);
 void 		exe_member_list(std::string &str, MemberRepository *mr);
 void		deleteFile(const std::string& filename);
 void		exe_Error_page(char *buf, int button, MemberRepository *mr);
+std::string getPostFileName(char *buf);
+std::string bufsaveBody(char *buf);
+void		POST_FILE(char *buf);
 
 
 
