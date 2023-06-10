@@ -79,6 +79,10 @@ std::string cgi_differentiation(char *buf, MemberRepository *mr){
         result = hj_cgi_execve(buf, mr);
         execveSAVE(buf, mr);
     }
+    else if ((method == 2 || method == 3 ) && url == "/members/del"){
+        result = hj_cgi_execve(buf, mr);
+        execveSAVE(buf, mr);
+    }
     else if (method == 2 && url == "/members/logins")
         result = hj_cgi_execve(buf, mr);
     else if (method == 2 && url == "/upload/file")
@@ -126,42 +130,10 @@ std::string hj_cgi_execve(char *buf, MemberRepository *mr){
         }
         close(cgiOutput[0]);
         waitpid(pid, &status, 0);
-        std::cout << "-------------CGI OUTPUT-------------" << std::endl;
-        std::cout << cgi_output << std::endl;
-        std::cout << "------------------------------------" << std::endl;
+        // std::cout << "-------------CGI OUTPUT-------------" << std::endl;
+        // std::cout << cgi_output << std::endl;
+        // std::cout << "------------------------------------" << std::endl;
     }
 	return cgi_output;
 }
 
-std::string getPostValue(char *buf, const char *value){
-	const char* rvalue = std::strstr(buf, value);
-	std::string findvalue;
-	if (rvalue != NULL)
-    {
-        const char* valueStart = rvalue + std::strlen(value);
-        const char* valueEnd = std::strstr(valueStart, "&");
-		if (valueStart == valueEnd)
-			return "";
-        if (valueEnd != NULL)
-            findvalue = std::string(valueStart, valueEnd - valueStart);
-        else{
-			return "";
-		}
-    }
-    else{
-		return "";
-	}
-	return findvalue;
-}
-
-void	execveSAVE(char *buf, MemberRepository *mr){
-	Member find;
-	std::string findId = getPostValue(buf, "id=");
-	std::string findPassword = getPostValue(buf, "password=");
-	std::string findName = getPostValue(buf, "name=");
-	find = mr->findById(findId);
-	if (find.getById().length() != 0 || findPassword.length() < 4 ||
-		findId.length() < 3 || findName.length() == 0)
-		return ;
-	mr->addMember(findId, findPassword, findName);
-}

@@ -35,6 +35,22 @@ bool MemberRepository::login(std::string id, std::string password){
 		return (true);
 }
 
+bool MemberRepository::memberWithdrawal(std::string id, std::string password){
+	size_t i;
+
+	for (i=0; i < this->member.size(); i++){
+		if (member[i].getById() == id)
+			break;
+	}
+	if (i == member.size())
+		return false;
+	if (member[i].getPassword() == password){
+		member.erase(member.begin() + i);
+		return true;
+	}
+	return false;
+}
+
 Member MemberRepository::findById(std::string id){
 	Member result;
 	size_t i = 0;

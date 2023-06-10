@@ -22,6 +22,20 @@ size_t MemberRepository::getMemberSize(){
 	return this->member.size();
 }
 
+bool MemberRepository::memberWithdrawal(std::string id, std::string password){
+	size_t i;
+
+	for (i=0; i < this->member.size(); i++){
+		if (member[i].getById() == id)
+			break;
+	}
+	if (member[i].getPassword() == password){
+		member.erase(member.begin() + i);
+		return true;
+	}
+	return false;
+}
+
 bool MemberRepository::login(std::string id, std::string password){
 	Member loginmember;
 

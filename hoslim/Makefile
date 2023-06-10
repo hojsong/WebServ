@@ -15,7 +15,8 @@ SRCS = \
 	./srcs/Connection.cpp \
 	./srcs/Member.cpp \
 	./srcs/MemberRepository.cpp \
-	./srcs/cgi_util.cpp
+	./srcs/cgi_util.cpp \
+	./srcs/post_true.cpp
 
 CGIS = \
 	cgi/cgi_main.cpp \
@@ -23,7 +24,9 @@ CGIS = \
 	cgi/util.cpp \
 	cgi/Member.cpp \
 	cgi/MemberRepository.cpp \
-	cgi/file_post.cpp
+	cgi/file_post.cpp \
+	cgi/headeradd.cpp
+	
 INCS = \
 	./incs/
 CNCS = \

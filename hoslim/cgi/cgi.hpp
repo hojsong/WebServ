@@ -38,10 +38,12 @@ void		deleteFile(const std::string& filename);
 void		exe_Error_page(char *buf, int button, MemberRepository *mr);
 std::string getPostFileName(char *buf);
 std::string bufsaveBody(char *buf);
-void		POST_FILE(char *buf);
-
-
-
-
+void		POST_FILE(char *buf, MemberRepository *mr);
+std::string cookie_add(char *buf, MemberRepository *mr);
+void 		head_plus(std::string &content, int status, char *buf, MemberRepository *mr);
+Member 		get_cookie(char *buf, MemberRepository *mr);
+std::string get_header(int status, std::string &content);
+void		exe_Complete_page(char *buf, int button, MemberRepository *mr);
+bool	 	GetComplete(char *buf,MemberRepository *mr);
 
 #endif

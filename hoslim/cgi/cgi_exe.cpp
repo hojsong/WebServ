@@ -1,7 +1,7 @@
 #include "cgi.hpp"
 
 void	exe_Error_page(char *buf, int button, MemberRepository *mr){
-	std::ifstream file("./html/Error.html");
+	std::ifstream file("./html/Error/cgi_Error.html");
 	std::string errorpage = getHtml(file);
 	Member find;
 	if (button == 2){
@@ -16,10 +16,39 @@ void	exe_Error_page(char *buf, int button, MemberRepository *mr){
 			text_change(errorpage, "Message2", "비밀번호의 길이가 적절하지 않습니다.");
 		else if (findName.length() == 0)
 			text_change(errorpage, "Message2", "이름을 입력하지 않으셨습니다.");
+		head_plus(errorpage, 200, buf, mr);
 	}
 	if (button == 3){
 		text_change(errorpage, "Message1", "로그인 실패");
 		text_change(errorpage, "Message2", "ID 또는 Password 를 확인해주세요");
+		head_plus(errorpage, 200, buf, mr);
+	}
+	if (button == 4){
+		text_change(errorpage, "Message1", "회원 탈퇴 실패");
+		text_change(errorpage, "Message2", "ID 또는 Password 를 확인해주세요");
+		head_plus(errorpage, 200, buf, mr);
+	}
+	std::cout << errorpage << std::endl;
+}
+
+void	exe_Complete_page(char *buf, int button, MemberRepository *mr){
+	std::ifstream file("./html/members/complete/complete.html");
+	std::string errorpage = getHtml(file);
+	std::string findId = getValue(buf, "id=");
+	if (button == 2){
+		text_change(errorpage, "Message1", "생성 성공");
+		text_change(errorpage, "Message2", findId + "님 회원 가입이 완료되었습니다.");
+		head_plus(errorpage, 200, buf, mr);
+	}
+	if (button == 3){
+		text_change(errorpage, "Message1", "로그인 성공");
+		text_change(errorpage, "Message2", findId + "님 로그인이 완료되었습니다.");
+		head_plus(errorpage, 200, buf, mr);
+	}
+	if (button == 4){
+		text_change(errorpage, "Message1", "회원 탈퇴 성공");
+		text_change(errorpage, "Message2", findId + "님 회원 탈퇴가 완료되었습니다.");
+		head_plus(errorpage, 200, buf, mr);
 	}
 	std::cout << errorpage << std::endl;
 }
@@ -31,6 +60,7 @@ void	member_id_chk(char *buf, MemberRepository *mr){
 	if (button == 1){
 		bool set = execveID_CHK(buf, mr);
 		create_changer(buf, str, set);
+		head_plus(str, 200, buf, mr);
 		std::cout << str << std::endl;
 	}
 }
@@ -38,5 +68,6 @@ void	member_id_chk(char *buf, MemberRepository *mr){
 void	member_list(char *buf, MemberRepository *mr){
 	std::string str = getFile(buf, mr);
 	exe_member_list(str, mr);
+	head_plus(str, 200, buf, mr);
 	std::cout << str << std::endl;
 }

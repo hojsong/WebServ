@@ -11,11 +11,13 @@ int main(int argc, char **argv){
 	url = GetUrl(argv[1]);
 	if (GetBool(argv[1], &mr) == false)
 		exe_Error_page(argv[1], button, &mr);
-	else if (url == "/members/new")
+	if (GetComplete(argv[1], &mr) == true)
+		exe_Complete_page(argv[1], button, &mr);
+	if (url == "/members/new")
 		member_id_chk(argv[1], &mr);
 	else if (url == "/members")
 		member_list(argv[1], &mr);
 	else if (url == "/upload/file")
-		POST_FILE(argv[1]);
+		POST_FILE(argv[1], &mr);
 	return (0);
 }

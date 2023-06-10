@@ -118,6 +118,10 @@ int	getButton(char *buf){
 	if (button3 != NULL){
 		return (3);
 	}
+	const char* button4 = std::strstr(buf, "Withdrawal=");
+	if (button4 != NULL){
+		return (4);
+	}
 	return (0);
 }
 
@@ -140,7 +144,6 @@ bool	execveSAVE(char *buf, MemberRepository *mr){
 	if (find.getById().length() != 0 || findPassword.length() < 4 ||
 		findId.length() < 3 || findName.length() == 0)
 		return false;
-	mr->addMember(findId, findPassword, findName);
 	return true;
 }
 
@@ -156,6 +159,13 @@ bool	execveLogin(char *buf, MemberRepository *mr){
 	return (mr->login(findId, findPassword));
 }
 
+bool execveWithdrawal(char *buf, MemberRepository *mr){
+	std::string id = getValue(buf, "id=");
+	std::string password = getValue(buf, "password=");
+
+	return (mr->login(id, password));
+}
+
 bool GetBool(char *buf,MemberRepository *mr){
 	bool exe = true;
 	int button = getButton(buf);
@@ -165,6 +175,25 @@ bool GetBool(char *buf,MemberRepository *mr){
 	}
 	else if (button == 3){
 		exe = execveLogin(buf, mr);
+	}
+	else if (button == 4){
+		exe = execveWithdrawal(buf, mr);
+	}
+	return exe;
+}
+
+bool GetComplete(char *buf,MemberRepository *mr){
+	bool exe = false;
+	int button = getButton(buf);
+	
+	if (button == 2){
+		exe = execveSAVE(buf, mr);
+	}
+	else if (button == 3){
+		exe = execveLogin(buf, mr);
+	}
+	else if (button == 4){
+		exe = execveWithdrawal(buf, mr);
 	}
 	return exe;
 }
@@ -191,13 +220,13 @@ std::string getFile(char *buf, MemberRepository *mr){
 	else if (GetBool(buf, mr) == false)
 		return "";
 	if (url == "/members/new" && button == 1)
-		filename = "./html/createMemberForm.html";
+		filename = "./html/members/new/createMemberForm.html";
 	else if (url == "/members/new")
-		filename = "./html/Home.html";
+		filename = "./html/members/new/home.html";
 	else if (url == "/members")
-		filename = "./html/memberList.html";	
+		filename = "./html/members/memberList.html";	
 	else if (url == "/members/logins")
-		filename = "./html/Home.html";
+		filename = "./html/members/logins/home.html";
 	else
 		return "";
 	std::string result;

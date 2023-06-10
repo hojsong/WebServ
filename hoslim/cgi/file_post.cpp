@@ -39,7 +39,7 @@ std::string getPostFileName(char *buf){
 	return filename;
 }
 
-void POST_FILE(char *buf){
+void POST_FILE(char *buf, MemberRepository *mr){
 	std::string filename = getPostFileName(buf);
 	if (filename.length() == 0)
 		return ;
@@ -54,7 +54,8 @@ void POST_FILE(char *buf){
 	std::ofstream savefile("./file/" + filename);
 	savefile << savebody;
 	savefile.close();
-	std::ifstream file("./html/Home.html");
+	std::ifstream file("./html/home.html");
 	std::string result = getHtml(file);
+	head_plus(result, 200, buf, mr);
 	std::cout << result << std::endl;
 }

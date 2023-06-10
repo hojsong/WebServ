@@ -458,6 +458,7 @@ void    ServerManage::runServer(void) {
                     
                     char buffer[BUFFER_SIZE];
                     ssize_t len = readData(server_list.back(), buffer, BUFFER_SIZE);
+                    buffer[len] = '\0';
                     if (len > 0) {
                         Request     req = processRequest(buffer, len);
                         std::string req_path = req.getPath();
@@ -470,22 +471,33 @@ void    ServerManage::runServer(void) {
                         //         req.setBody(post_body);
                         //     }
                         // }
-
-                        // 호성짱 이것좀 봐 달라능 //ㅅ //
-                        //location 에 허용 메소드 확인후 cgi_differentiation(buf(recvData), server->getMemberRepository()); 호출
-                        //리턴값은 헤더가 없는 html파일
-                        //헤더 처리가 필요하다고 하면 내가 따로 해둘게.
-
-
-                        if (req_method == "GET")
-                            sendResponse(server_list.back(), serv[index], req_path, 200);
+                        // server_list.back() = clnt_sock
+                        // buf
+                        std::cout << buffer << std::endl;
+                        if (req_method == "GET"){
+                            std::string cgi_str = hj_cgi_execve(buffer, serv[index].getMemberRepository());
+                            if (cgi_str.length() == 0)
+                                sendResponse(server_list.back(), serv[index], req_path, 200);
+                            else {
+                                std::cout << cgi_str << std::endl;
+                                write(server_list.back(), cgi_str.c_str(), cgi_str.size());
+                                // buffer.clear();
+                            }
+                        }
                         else if (req_method == "PUT")
                             executeMethodPut(buffer, len, server_list, serv[index], "." + req_path);
                         else if (req_method == "DELETE")
                             executeMethodDelete(server_list, serv[index], "." + req_path);
-                        // else if (req_method == "POST")
-                        //     handle_cgi(server_list.back(), req);
-                            // executeMethodPost(server_list.back(), serv[index], req, buffer, len);
+                        else if (req_method == "POST"){
+                            std::string cgi_str = hj_cgi_execve(buffer, serv[index].getMemberRepository());
+                            if (GetComplete(buffer, serv[index].getMemberRepository())){
+                                if (req_method == "DELETE" || std::strstr(buffer, "_method=delete"))
+                                    delete_member_true(buffer, serv[index].getMemberRepository());
+                                else
+                                    save_true(buffer, serv[index].getMemberRepository());
+                            }
+                            write(server_list.back(), cgi_str.c_str(), cgi_str.size());
+                        }
                         else if (req_method == "HEAD")
                             executeMethodHead(server_list.back(), serv[index], 200);
                         else
