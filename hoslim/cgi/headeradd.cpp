@@ -42,24 +42,25 @@ std::string get_header(int status, std::string &content){
 
 void 		head_plus (std::string &content, int status, char *buf, MemberRepository *mr){
 	std::string cookie;
-	if (GetUrl(buf) == "/members/Logout")
-		cookie = "expires=Thu, 01-Jan-1970 00:00:01 GMT";
+	if (GetUrl(buf) == "/members/logins" && get_cookie(buf, mr).getById().length() != 0)
+		cookie = "Set-Cookie: expires=Thu, 01-Jan-1970 00:00:01; GMT path=/";
 	else { 
 		cookie = cookie_add(buf, mr);
 	}
     std::string response_header = get_header(status, content);
-	// if (cookie.length() == 0 || get_cookie(buf,mr).getById().length() != 0)
+	if (cookie.length() == 0 || get_cookie(buf,mr).getById().length() != 0)
     	content = response_header+ "\r\n\r\n" + content;
-	// else{
-	// 	content = response_header + "\r\n" + cookie + "\r\n\r\n" + content;
-	// }
+	else{
+		content = response_header + "\r\n" + cookie + "\r\n\r\n" + content;
+	}
 }
 
 std::string cookie_add(char *buf, MemberRepository *mr){
 	std::string result = "";
 	
-	if (execveLogin(buf, mr) == true){
-		result = "Set-Cookie: login_ided=" + getValue(buf, "login_id=") + "&;\r\n";
+	if (getButton(buf) == 3 && execveLogin(buf, mr) == true){
+		if (get_cookie(buf, mr).getById().length() == 0)
+			result = "Set-Cookie: login_ided=" + getValue(buf, "login_id=") + "&; path=/\r\n";
 	}
 	return result;
 }
@@ -69,7 +70,7 @@ Member get_cookie(char *buf, MemberRepository *mr){
 	
 	std::string findId = getValue(buf, "login_ided=");
 	if (getValue(buf, "Cookie:").length() != 0){
-		member = mr->findById(findId);
+		return(mr->findById(findId));
 	}
 	return member;
 }
