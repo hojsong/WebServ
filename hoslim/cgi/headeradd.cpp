@@ -21,6 +21,9 @@ std::string get_header(int status, std::string &content){
 	else if (status == 400){
 		result = "HTTP/1.1 400 Bad Request\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: "+ con_size;
 	}
+	else if (status == 401){
+		result = "HTTP/1.1 401 Unauthorized\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: "+ con_size;
+	}
 	else if (status == 102){
 		result = "HTTP/1.1 102 Processing\r\n";
 	}
@@ -38,7 +41,12 @@ std::string get_header(int status, std::string &content){
 }
 
 void 		head_plus (std::string &content, int status, char *buf, MemberRepository *mr){
-	std::string cookie = cookie_add(buf, mr);
+	std::string cookie;
+	if (GetUrl(buf) == "/members/Logout")
+		cookie = "expires=Thu, 01-Jan-1970 00:00:01 GMT";
+	else { 
+		cookie = cookie_add(buf, mr);
+	}
     std::string response_header = get_header(status, content);
 	// if (cookie.length() == 0 || get_cookie(buf,mr).getById().length() != 0)
     	content = response_header+ "\r\n\r\n" + content;

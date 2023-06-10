@@ -42,18 +42,20 @@ std::string getPostFileName(char *buf){
 void POST_FILE(char *buf, MemberRepository *mr){
 	std::string filename = getPostFileName(buf);
 	if (filename.length() == 0)
-		return ;
-	std::string savebody = bufsaveBody(buf);
-	size_t pos = savebody.find("\r\n");
-    if (pos != std::string::npos) {
-        std::string result = savebody.substr(0, pos);
-		savebody.clear();
-		savebody = result;
-		result.clear();
-    }
-	std::ofstream savefile("./file/" + filename);
-	savefile << savebody;
-	savefile.close();
+		;
+	else {
+		std::string savebody = bufsaveBody(buf);
+		size_t pos = savebody.find("\r\n");
+    	if (pos != std::string::npos) {
+    	    std::string result = savebody.substr(0, pos);
+			savebody.clear();
+			savebody = result;
+			result.clear();
+    	}
+		std::ofstream savefile("./file/" + filename);
+		savefile << savebody;
+		savefile.close();
+	}
 	std::ifstream file("./html/home.html");
 	std::string result = getHtml(file);
 	head_plus(result, 200, buf, mr);
