@@ -1,0 +1,51 @@
+<html>
+    <body>
+        <form action="../result/posttest.php" method="POST"> 
+        <!-- POST방식으로 해보겠습니다 -->
+            <fieldset>
+
+                <legend> input& post method test</legend>
+                <label for="in">name:</label>
+                <input type="text" id="in" name="name">
+                <!-- type은 택스트고 아이디는 in이고 value값은 name입니다 -->
+                <br>
+                <label>password:<input type="password" name="pw"></label>
+                <br>
+                <p>
+                    <!-- br계속쓰는것보다 p로만들자 -->
+                    gender:
+                    <label><input type="radio" name="rg" value="male" checked="checked">male</label>
+                    <label><input type="radio" name="rg" value="female">female</label>
+                </p>
+                <p>
+                    fruits:
+                    <label><input type="checkbox" name="fruits[]" value="apple">사과</label>
+                    <label><input type="checkbox" name="fruits[]" value="banana" checked="">바나나</label>
+                    <label><input type="checkbox" name="fruits[]" value="watermelon">수박</label>
+<!-- 반드시 name에[] 배열을만들어야합니다 , banana에 체크를 먼저되있습니다 안에 ""아무것도 없는이유는
+이름이 같으면 값을안써도된다는걸 보여준것입니다 -->
+                </p>
+                <p>
+                    message:
+                    <textarea name="msg" cols="40" rows="5"></textarea>
+                </p>
+                <div>
+                    <select name="sel">
+                        <optgroup label="자동차브랜드">
+                            <option value="현대">현대</option>
+                            <option value="기아">기아</option>
+                            <option value="쉐볼">쉐볼</option>
+                        </optgroup>
+                    </select>
+                </div>
+                <div>
+                    <input type="submit"><br>
+                    <input type="reset">
+                </div>
+                <!-- 화면에는 안보이지만 서버에 보내고 싶을때. -->
+                <input type="hidden" name="aaa" value="코딩초밥">
+            </fieldset>
+        </form>
+
+    </body>
+    </html>
