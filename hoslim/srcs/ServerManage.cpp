@@ -443,9 +443,12 @@ void    ServerManage::runServer(void) {
             struct sockaddr_in client_addr;
             int sockfd = event_list[i].ident;
             int event_flags = event_list[i].flags;
-            std::vector<int>::iterator iter = std::find(server_list.begin(), server_list.end(), sockfd);
-            if (iter != server_list.end()) {
-                int index = std::distance(server_list.begin(), iter);
+            int index;
+            for (index = 0; index < server_count; index++) {
+                if (sockfd == server_list[index])
+                    break;
+            }
+            if (index != server_count) {
                 std::map<int, std::string>  header_list = serv[index].getErrorPagesHeader();
                 if (event_list[i].filter == EVFILT_READ) {
                     acceptClient(sockfd, client_addr, server_list);
