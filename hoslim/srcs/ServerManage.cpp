@@ -443,9 +443,12 @@ void    ServerManage::runServer(void) {
             struct sockaddr_in client_addr;
             int sockfd = event_list[i].ident;
             int event_flags = event_list[i].flags;
-            std::vector<int>::iterator iter = std::find(server_list.begin(), server_list.end(), sockfd);
-            if (iter != server_list.end()) {
-                int index = std::distance(server_list.begin(), iter);
+            int index;
+            for (index = 0; index < server_count; index++) {
+                if (sockfd == server_list[index])
+                    break;
+            }
+            if (index != server_count) {
                 std::map<int, std::string>  header_list = serv[index].getErrorPagesHeader();
                 if (event_list[i].filter == EVFILT_READ) {
                     acceptClient(sockfd, client_addr, server_list);
@@ -458,6 +461,7 @@ void    ServerManage::runServer(void) {
                     
                     char buffer[BUFFER_SIZE];
                     ssize_t len = readData(server_list.back(), buffer, BUFFER_SIZE);
+                    buffer[len] = '\0';
                     if (len > 0) {
                         Request     req = processRequest(buffer, len);
                         std::string req_path = req.getPath();
@@ -470,16 +474,33 @@ void    ServerManage::runServer(void) {
                         //         req.setBody(post_body);
                         //     }
                         // }
-
-                        if (req_method == "GET")
-                            sendResponse(server_list.back(), serv[index], req_path, 200);
+                        // server_list.back() = clnt_sock
+                        // buf
+                        std::cout << buffer << std::endl;
+                        if (req_method == "GET"){
+                            std::string cgi_str = hj_cgi_execve(buffer, serv[index].getMemberRepository());
+                            if (cgi_str.length() == 0)
+                                sendResponse(server_list.back(), serv[index], req_path, 200);
+                            else {
+                                std::cout << cgi_str << std::endl;
+                                write(server_list.back(), cgi_str.c_str(), cgi_str.size());
+                                // buffer.clear();
+                            }
+                        }
                         else if (req_method == "PUT")
                             executeMethodPut(buffer, len, server_list, serv[index], "." + req_path);
                         else if (req_method == "DELETE")
                             executeMethodDelete(server_list, serv[index], "." + req_path);
-                        // else if (req_method == "POST")
-                        //     handle_cgi(server_list.back(), req);
-                            // executeMethodPost(server_list.back(), serv[index], req, buffer, len);
+                        else if (req_method == "POST"){
+                            std::string cgi_str = hj_cgi_execve(buffer, serv[index].getMemberRepository());
+                            if (GetComplete(buffer, serv[index].getMemberRepository())){
+                                if (req_method == "DELETE" || std::strstr(buffer, "_method=delete"))
+                                    delete_member_true(buffer, serv[index].getMemberRepository());
+                                else
+                                    save_true(buffer, serv[index].getMemberRepository());
+                            }
+                            write(server_list.back(), cgi_str.c_str(), cgi_str.size());
+                        }
                         else if (req_method == "HEAD")
                             executeMethodHead(server_list.back(), serv[index], 200);
                         else
