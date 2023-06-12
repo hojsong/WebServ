@@ -30,6 +30,10 @@ void    Response::setContentLength(int param) {
     content_length = param;
 }
 
+void    Response::setCgiStr(std::string cgi_str){
+    this->cgi_str = cgi_str;
+}
+
 std::string Response::getVersion(void) {
     return version;
 }
@@ -48,6 +52,10 @@ int         Response::getStatusCode(void) {
 
 int         Response::getContentLength(void) {
     return content_length;
+}
+
+std::string Response::getCgiStr(void){
+    return this->cgi_str;
 }
 
 std::string Response::makeHeader(void) {

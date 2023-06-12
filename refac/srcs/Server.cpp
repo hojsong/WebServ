@@ -53,7 +53,6 @@ Server::run(void) {
 	}
 }
 
-
 //setter
 void    Server::setServerName(std::string param) {
     size_t pos = param.find(';');
@@ -172,6 +171,10 @@ void    Server::setClntFd(int fd) {
 //     requests.push(param);
 // }
 
+void    Server::setMemberRepository(MemberRepository *memberRepository){
+    this->memberRepository = memberRepository;    
+}
+
 //getter
 std::string    Server::getServerName(void) {
     return server_name;
@@ -225,6 +228,10 @@ struct sockaddr_in*  Server::getServerAddress(void) {
 
 int Server::getClntFd(void) {
     return clnt_fd;
+}
+
+MemberRepository *Server::getMemberRepository(void){
+    return (this->memberRepository);
 }
 
 // std::map<int, Connection>       Server::getConnect(void) {

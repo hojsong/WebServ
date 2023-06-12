@@ -22,6 +22,7 @@ void    ParseConfig::parsingFile(const std::string& filename) {
 	for (size_t i = 0; i < servers_config.size(); i++) {
 		Server new_server;
 		createServer(servers_config[i], new_server);
+		new_server.setMemberRepository(&this->memberRepository);
 		servers.push_back(new_server);
 	}
 }

@@ -39,6 +39,8 @@
 #include <sys/time.h>
 
 //class
+#include "Member.hpp"
+#include "MemberRepository.hpp"
 #include "ServerManage.hpp"
 #include "ParseConfig.hpp"
 #include "Server.hpp"

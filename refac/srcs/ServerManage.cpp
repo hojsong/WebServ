@@ -202,48 +202,53 @@ void    sendResponse(int client_fd, Server &server, std::string req_path, Respon
     std::string response;
     bool    is_404 = true;
 
-    if (res.getStatusCode() > 400) { // 원래는 200
-        body = makeBody(server, req_path, locs[0], res);
-        response = buildResponse(body, locs[0], server, res.getStatusCode());
-        write(client_fd, response.c_str(), response.size());
-        return ;
+    if (res.getCgiStr().length() != 0){
+        write(client_fd, res.getCgiStr().c_str(), res.getCgiStr().length());
     }
-    size_t i;
-    for (i = 0; i < locs.size(); i++) {
-        if (locs[i].getPath() == req_path) {
-            Location    target = locs[i];
-            if (target.getReturnValue().size() == 2) {
-                std::string return_path = target.getReturnValue();
-
-                // int head_number = atoi(buf[0].c_str());
-                // std::string return_path = buf[1];
-                // response = buildResponse(body, target, server, head_number);
-                // std::cout << response << std::endl;
-                // std::cout << return_path << std::endl;
-                // 303 처리에 대한 문제점 : 한 fd당 한번의 send만 가능하나
-                // 303 send 후 다시 리다이렉션시 소켓이 끊김
-                // write(client_fd, response.c_str(), response.size());
-
-                sendResponse(client_fd, server, return_path, res);
-                return ;
-            }
-            body = makeBody(server, req_path, target, res);
-            response = buildResponse(body, target, server, res.getStatusCode());
-            is_404 = false;
-            break;
-        }  else if (locs[i].getAutoindex() == true && isDirect(server, locs[i], "." + req_path) == true) {
-            body = makeBody(server, req_path, locs[i], res);
-            response = buildResponse(body, locs[i], server, res.getStatusCode());
-            is_404 = false;
-            break;
+    else {
+        if (res.getStatusCode() > 400) { // 원래는 200
+            body = makeBody(server, req_path, locs[0], res);
+            response = buildResponse(body, locs[0], server, res.getStatusCode());
+            write(client_fd, response.c_str(), response.size());
+            return ;
         }
+        size_t i;
+        for (i = 0; i < locs.size(); i++) {
+            if (locs[i].getPath() == req_path) {
+                Location    target = locs[i];
+                if (target.getReturnValue().size() == 2) {
+                    std::string return_path = target.getReturnValue();
+
+                    // int head_number = atoi(buf[0].c_str());
+                    // std::string return_path = buf[1];
+                    // response = buildResponse(body, target, server, head_number);
+                    // std::cout << response << std::endl;
+                    // std::cout << return_path << std::endl;
+                    // 303 처리에 대한 문제점 : 한 fd당 한번의 send만 가능하나
+                    // 303 send 후 다시 리다이렉션시 소켓이 끊김
+                    // write(client_fd, response.c_str(), response.size());
+
+                    sendResponse(client_fd, server, return_path, res);
+                    return ;
+                }
+                body = makeBody(server, req_path, target, res);
+                response = buildResponse(body, target, server, res.getStatusCode());
+                is_404 = false;
+                break;
+            }  else if (locs[i].getAutoindex() == true && isDirect(server, locs[i], "." + req_path) == true) {
+                body = makeBody(server, req_path, locs[i], res);
+                response = buildResponse(body, locs[i], server, res.getStatusCode());
+                is_404 = false;
+                break;
+            }
+        }
+        if (is_404 == true) {
+            res.setStatusCode(404);
+            body = makeBody(server, req_path, locs[0], res);
+            response = buildResponse(body, locs[0], server, res.getStatusCode());
+        }
+        write(client_fd, response.c_str(), response.size());
     }
-    if (is_404 == true) {
-        res.setStatusCode(404);
-        body = makeBody(server, req_path, locs[0], res);
-        response = buildResponse(body, locs[0], server, res.getStatusCode());
-    }
-    write(client_fd, response.c_str(), response.size());
 }
 
 // void    executeMethodDelete(std::vector<int> server_list, Server serv, std::string req_path) {
@@ -510,15 +515,24 @@ void    ServerManage::runServer(void) {
                         if (is_ok.size() > 0) { // 접근할 수 있는 Method가 있을 경우
                             // 각 메소드 및 권한을 파악하여 응답 생성
                             if (this->connects[curr_event->ident].getMethod() == "GET" && is_ok[0] > 0) {
-                                    std::string body = makeBody(servers[index], connects[curr_event->ident].getPath(), servers[index].getLocations()[index], res);
-                                    std::string send_message = buildResponse(body, servers[index].getLocations()[index], servers[index], res.getStatusCode());
+                                std::string cgi_str = hj_cgi_execve(buffer, servers[index].getMemberRepository());
+                                responses[curr_event->ident].setCgiStr(cgi_str);
+                                std::string body = makeBody(servers[index], connects[curr_event->ident].getPath(), servers[index].getLocations()[index], res);
+                                std::string send_message = buildResponse(body, servers[index].getLocations()[index], servers[index], res.getStatusCode());
                             }
-                                // else if (this->connects[curr_event->ident].getMethod() == "POST" && is_ok[2] > 0) {
-                                    
-                                // }
-                                // else if (this->connects[curr_event->ident].getMethod() == "DELETE" && is_ok[3] > 0) {
-
-                                // }
+                            else if (this->connects[curr_event->ident].getMethod() == "POST" && is_ok[2] > 0) {
+                                std::string cgi_str = hj_cgi_execve(buffer, servers[index].getMemberRepository());
+                                if (GetComplete(buffer, servers[index].getMemberRepository())){
+                                    if (this->connects[curr_event->ident].getMethod() == "DELETE" && is_ok[3] > 0 && std::strstr(buffer, "_method=delete"))
+                                        delete_member_true(buffer, servers[index].getMemberRepository());
+                                    else
+                                        save_true(buffer, servers[index].getMemberRepository());
+                                }
+                                responses[curr_event->ident].setCgiStr(cgi_str);
+                            }
+                            else if (this->connects[curr_event->ident].getMethod() == "DELETE" && is_ok[3] > 0) {
+                                
+                            }
                         }
                         // if (this->connects[curr_event->ident].getMethod() == "") {
                         //     // 없는 method error 처리

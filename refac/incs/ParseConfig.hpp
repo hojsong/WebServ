@@ -3,12 +3,14 @@
 
 #include "library.hpp"
 
+class   MemberRepository;
 class   Server;
 
 class   ParseConfig {
     private:
         std::vector<Server>         servers;
         std::vector<std::string>    servers_config;
+        MemberRepository            memberRepository;
     
     public:
         ParseConfig(void);

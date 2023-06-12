@@ -8,6 +8,7 @@ static std::string serverParams[] = {"server_name", "listen", "root", "index", "
 class Location;
 class Connection;
 class Request;
+class   MemberRepository;
 
 class Server {
     private:
@@ -15,7 +16,7 @@ class Server {
 
         // std::queue<Request>       requests;
         //setter, getter
-
+        MemberRepository            *memberRepository;
         std::string                 server_name;
         std::string                 root;
         std::string                 index;
@@ -49,6 +50,7 @@ class Server {
         void    setClntFd(int fd);
         // void    setConnection(int idx, Connection param);
         void    setRequest(Request param);
+        void    setMemberRepository(MemberRepository *memberRepository);
 
         //getter
         std::string                     getServerName(void);
@@ -67,6 +69,8 @@ class Server {
         // std::map<int, Connection>       getConnect(void);
         std::queue<Request>             getRequests(void);
         int                             getClntFd(void);
+        MemberRepository                *getMemberRepository(void);
+
 
         void    run(void);
         void    initErrorPages(void);
