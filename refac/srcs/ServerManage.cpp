@@ -153,7 +153,7 @@ std::string buildResponse(const std::string& body, Location loc, Server server, 
 ssize_t readData(int fd, char *buffer, size_t buffer_size) {
     ssize_t len = recv(fd, buffer, buffer_size, 0);
     if (len == 0) {
-        std::cout << "client disconnected" << std::endl;
+        //std::cout << "client disconnected" << std::endl;
     } else if (len > 0) {
         return len;
     }
@@ -203,6 +203,7 @@ void    sendResponse(int client_fd, Server &server, std::string req_path, Respon
     bool    is_404 = true;
 
     if (res.getCgiStr().length() != 0){
+        std::cout << res.getCgiStr() << std::endl;
         write(client_fd, res.getCgiStr().c_str(), res.getCgiStr().length());
     }
     else {
@@ -446,7 +447,7 @@ void    ServerManage::runServer(void) {
                 clients[clnt_fd] = servers[index].getServerSocket(); // 추후 클라이언트 이벤트 발생 시, curr_event->ident로 접근 가능
                 // Connection 객체 생성 -> 응답 시간 체크 및 request 정보 포함
                 Request req;
-                this->connects[clnt_fd] = req;
+                connects[clnt_fd] = req;
                 // 새로운 client 생성
                 std::cout << "Accept new client: " << clnt_fd << std::endl;
             }
@@ -484,7 +485,8 @@ void    ServerManage::runServer(void) {
                         }
                     }
                     else if (len == 0) { // 클라이언트와의 연결 종료(읽을 데이터가 없을 경우 클라이언트에게서는 0이 아닌 -1 값을 받아옴. 연결이 끊겼을 때(close)만 0 출력됨
-                        close(curr_event->ident);
+                        //close(curr_event->ident);
+                        continue;
                     }
                     else {
                         continue ; // 추후 다시 접근
@@ -504,7 +506,7 @@ void    ServerManage::runServer(void) {
                         }
                         processRequest(this->connects[curr_event->ident]);
                         for (i = 0; i < servers[index].getLocations().size(); i++) {
-                            if (connects[curr_event->ident].getPath() == servers[index].getLocations()[index].getPath())
+                            if (connects[curr_event->ident].getPath() == servers[index].getLocations()[i].getPath())
                                 break;
                         }
                         if (i == servers[index].getLocations().size())
@@ -528,6 +530,7 @@ void    ServerManage::runServer(void) {
                                     else
                                         save_true(buffer, servers[index].getMemberRepository());
                                 }
+                                std::cout << cgi_str << std::endl;
                                 responses[curr_event->ident].setCgiStr(cgi_str);
                             }
                             else if (this->connects[curr_event->ident].getMethod() == "DELETE" && is_ok[3] > 0) {
@@ -556,7 +559,7 @@ void    ServerManage::runServer(void) {
                     change_events(curr_event->ident, EVFILT_READ, EV_ENABLE); // 클라이언트 READ 이벤트 활성화
                     change_events(curr_event->ident, EVFILT_WRITE, EV_DISABLE); // 클아이언트 WRITE 이벤트 비활성화
                     connects[curr_event->ident].clearAll(); // 응답을 보냈으므로 안쪽 내용 초기화
-                    this->responses[curr_event->ident].clearAll();
+                    responses[curr_event->ident].clearAll();
                     std::cout << "response ok" << std::endl;
                 }
             }
