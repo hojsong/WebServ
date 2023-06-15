@@ -389,7 +389,6 @@ bool ServerManage::checkServerIndex(struct kevent *curr_event) {
 void    ServerManage::runServer(void) {
     int server_size = this->servers.size();
     
-    struct kevent eventList[server_size];
     struct kevent *curr_event;
 
     //socket open
@@ -406,9 +405,13 @@ void    ServerManage::runServer(void) {
         change_events(this->servers[i].getServerSocket(), EVFILT_READ, EV_ADD | EV_ENABLE);
     }
     std::cout << "Server Start!" << std::endl;
+    struct timespec time_out;
+    time_out.tv_nsec = 1000;
+    time_out.tv_sec = 0;
     //main loop
     while(true) {
-        int event_count = kevent(kq, &changeList[0], server_size, eventList, 8, 0); // blocking -> X
+        struct kevent eventList[server_size];
+        int event_count = kevent(kq, &changeList[0], server_size, eventList, 8, &time_out); // blocking -> X
         // std::cout << "event count: " << event_count << std::endl;
 
         changeList.clear();
@@ -418,9 +421,10 @@ void    ServerManage::runServer(void) {
         }
         for (int i = 0; i < event_count; ++i) { // 이벤트 개수만큼 루프 순회
             curr_event = &eventList[i];
-            std::cout << "First event: " << curr_event->ident << std::endl;
+            // std::cout << "First event: " << curr_event->ident << std::endl;
             if (curr_event->flags & EV_ERROR) { // 에러 발생 시
                 //perror("kevent");
+                close(curr_event->ident);
                 continue;
                 // 에러 처리 필요
             }
@@ -522,13 +526,13 @@ void    ServerManage::runServer(void) {
                         if (is_ok.size() > 0) { // 접근할 수 있는 Method가 있을 경우
                             // 각 메소드 및 권한을 파악하여 응답 생성
                             if (this->connects[curr_event->ident].getMethod() == "GET") {
-                                std::string cgi_str = hj_cgi_execve(buffer, servers[index].getMemberRepository());
+                                std::string cgi_str = cgi_differentiation(buffer, servers[index].getMemberRepository());
                                 responses[curr_event->ident].setCgiStr(cgi_str);
                                 std::string body = makeBody(servers[index], connects[curr_event->ident].getPath(), servers[index].getLocations()[index], res);
                                 std::string send_message = buildResponse(body, servers[index].getLocations()[index], servers[index], res.getStatusCode());
                             }
                             else if (this->connects[curr_event->ident].getMethod() == "POST") {
-                                std::string cgi_str = hj_cgi_execve(buffer, servers[index].getMemberRepository());
+                                std::string cgi_str = cgi_differentiation(buffer, servers[index].getMemberRepository());
                                 if (GetComplete(buffer, servers[index].getMemberRepository())){
                                     if (this->connects[curr_event->ident].getMethod() == "DELETE" && is_ok[3] > 0 && std::strstr(buffer, "_method=delete"))
                                         delete_member_true(buffer, servers[index].getMemberRepository());
@@ -563,8 +567,6 @@ void    ServerManage::runServer(void) {
                     }
                     sendResponse(curr_event->ident, servers[index], connects[curr_event->ident].getPath(), responses[curr_event->ident]);
                     if (responses[curr_event->ident].getCgiStr() != "") {
-                        connects.erase(curr_event->ident);
-                        responses.erase(curr_event->ident);
                         close(curr_event->ident);
                         continue;
                     }
