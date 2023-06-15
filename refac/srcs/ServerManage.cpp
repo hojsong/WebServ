@@ -419,12 +419,14 @@ void    ServerManage::runServer(void) {
         }
         for (int i = 0; i < event_count; ++i) { // 이벤트 개수만큼 루프 순회
             curr_event = &eventList[i];
+            std::cout << "First event: " << curr_event->ident << std::endl;
             if (curr_event->flags & EV_ERROR) { // 에러 발생 시
                 //perror("kevent");
                 continue;
                 // 에러 처리 필요
             }
             if (checkServerIndex(curr_event)) { // 서버 소켓일 경우, 서버 인덱스 값
+                std::cout << "Server event: " << curr_event->ident << std::endl;
                 size_t      index;
 
                 for (index = 0; index < servers.size(); ++index) {
@@ -453,9 +455,12 @@ void    ServerManage::runServer(void) {
             }
             else { // 0일 경우 클라이언트 소켓 값
                 if (curr_event->filter == EVFILT_READ) {
+                    std::cout << "Read event: " << curr_event->ident << std::endl;
                 // 클라이언트 소켓일 경우 Reqeust를 읽어야 하기 때문에 아래 else if 문으로 접근(else문의 curr_event->ident는 모두 클라이언트 소켓임)
                     char buffer[BUFFER_SIZE + 1];
+                    std::memset(buffer, 0, sizeof(buffer));
                     ssize_t len = readData(curr_event->ident, buffer, 4096);
+                    std::cout << len << std::endl;
                     // len > 0 : 읽을 데이터 있음, len == -1 : 아직 데이터 수신을 완료하지 못했을 수 있으므로 다시 접근, len == 0 : 클라이언트와의 접근이 끊김(close)
                     if (len > 0) {
                         buffer[len] = '\0';
@@ -485,10 +490,11 @@ void    ServerManage::runServer(void) {
                         }
                     }
                     else if (len == 0) { // 클라이언트와의 연결 종료(읽을 데이터가 없을 경우 클라이언트에게서는 0이 아닌 -1 값을 받아옴. 연결이 끊겼을 때(close)만 0 출력됨
-                        //close(curr_event->ident);
-                        continue;
+                        close(curr_event->ident);
+                        //continue;
                     }
                     else {
+                        //std::cout << "here here!!!!!!!!!!!!!!!!!!!" << std::endl;
                         continue ; // 추후 다시 접근
                     }
                     if (connects[curr_event->ident].getState() == READ_FINISH) { // 데이터를 모두 읽었을 경우 본문 응답 생성
@@ -530,7 +536,6 @@ void    ServerManage::runServer(void) {
                                     else
                                         save_true(buffer, servers[index].getMemberRepository());
                                 }
-                                std::cout << cgi_str << std::endl;
                                 responses[curr_event->ident].setCgiStr(cgi_str);
                             }
                             else if (this->connects[curr_event->ident].getMethod() == "DELETE" && is_ok[3] > 0) {
@@ -546,6 +551,7 @@ void    ServerManage::runServer(void) {
                     }  
                 }
                 else if (curr_event->filter == EVFILT_WRITE) { // 클라이언트 소켓이고, WRITE 이벤트가 생겼을 경우
+                    std::cout << "Write event: " << curr_event->ident << std::endl;
                     uintptr_t   serv_fd;
                     size_t      index;
 
@@ -556,7 +562,7 @@ void    ServerManage::runServer(void) {
                         }
                     }
                     sendResponse(curr_event->ident, servers[index], connects[curr_event->ident].getPath(), responses[curr_event->ident]);
-                    change_events(curr_event->ident, EVFILT_READ, EV_ENABLE); // 클라이언트 READ 이벤트 활성화
+                    change_events(curr_event->ident, EVFILT_READ, EV_DISABLE); // 클라이언트 READ 이벤트 활성화
                     change_events(curr_event->ident, EVFILT_WRITE, EV_DISABLE); // 클아이언트 WRITE 이벤트 비활성화
                     connects[curr_event->ident].clearAll(); // 응답을 보냈으므로 안쪽 내용 초기화
                     responses[curr_event->ident].clearAll();
