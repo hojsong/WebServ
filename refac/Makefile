@@ -38,22 +38,22 @@ OBCS = $(CGIS:.cpp=.o)
 all : $(NAME) $(NAME2)
 
 %.o : %.cpp
-	$(CXX) $(FLAG) -I $(INCS) -c $< -o $@
+	@$(CXX) $(FLAG) -I $(INCS) -c $< -o $@
 
 $(NAME) : $(OBJS) $(INCS)
-	$(CXX) $(FLAG) -I $(INCS) -o $(NAME) $(OBJS)
+	@$(CXX) $(FLAG) -I $(INCS) -o $(NAME) $(OBJS)
 
 $(NAME2) : $(OBCS) $(CNCS)
-	$(CXX) $(FLAG) -I $(CNCS) -o $(NAME2) $(OBCS)
+	@$(CXX) $(FLAG) -I $(CNCS) -o $(NAME2) $(OBCS)
 
 clean :
-	$(RM) $(OBJS)
-	$(RM) $(OBCS)
+	@$(RM) $(OBJS)
+	@$(RM) $(OBCS)
 
 fclean : clean
-	$(RM) $(NAME)
-	$(RM) $(NAME2)
-	rm -rf memberdb.txt
+	@$(RM) $(NAME)
+	@$(RM) $(NAME2)
+	@rm -rf memberdb.txt
 
 re : fclean all
 

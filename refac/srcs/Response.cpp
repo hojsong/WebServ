@@ -6,6 +6,7 @@ Response::Response(void) {
     content_type = "";
     content_length = 0;
     connection = "";
+    cgi_str = "";
 }
 
 Response::~Response(void) {}
@@ -68,4 +69,5 @@ void    Response::clearAll(void) {
     content_type = "";
     content_length = 0;
     connection = "";
+    cgi_str = "";
 }

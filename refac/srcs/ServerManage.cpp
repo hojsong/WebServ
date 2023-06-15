@@ -203,7 +203,6 @@ void    sendResponse(int client_fd, Server &server, std::string req_path, Respon
     bool    is_404 = true;
 
     if (res.getCgiStr().length() != 0){
-        std::cout << res.getCgiStr() << std::endl;
         write(client_fd, res.getCgiStr().c_str(), res.getCgiStr().length());
     }
     else {
@@ -269,19 +268,19 @@ void    sendResponse(int client_fd, Server &server, std::string req_path, Respon
 
 // }
 
-void handle_cgi(std::string cgiPath, int sockfd, Request req) {
+std::string handle_cgi(std::string cgiPath, Request req) {
     int cgiInput[2], cgiOutput[2];
 	pid_t pid;
 	int status;
 
 	if (pipe(cgiInput) < 0 || pipe(cgiOutput) < 0) {
 		perror("pipe error");
-		return ;
+		return "";
 	}
 
 	if ((pid = fork()) < 0) {
 		perror("fork error");
-		return ;
+		return "";
 	}
 
 	if (pid == 0) {
@@ -292,18 +291,18 @@ void handle_cgi(std::string cgiPath, int sockfd, Request req) {
 
 
 		std::string contentLength = "CONTENT_LENGTH=" + std::to_string(req.getBody().size());
-        std::string pythonPath = "/opt/homebrew/lib/python3.10/site-packages";  // PIL 모듈이 설치된 디렉토리 경로로 변경해야 합니다.
-        std::string pythonPathEnv = "PYTHONPATH=" + pythonPath;
-        char* pythonPathEnvPtr = new char[pythonPathEnv.size() + 1];
-        std::strcpy(pythonPathEnvPtr, pythonPathEnv.c_str());
-        pythonPathEnvPtr[pythonPathEnv.size()] = '\0';
+        // std::string pythonPath = "/opt/homebrew/lib/python3.10/site-packages";  // PIL 모듈이 설치된 디렉토리 경로로 변경해야 합니다.
+        // std::string pythonPathEnv = "PYTHONPATH=" + pythonPath;
+        // char* pythonPathEnvPtr = new char[pythonPathEnv.size() + 1];
+        // std::strcpy(pythonPathEnvPtr, pythonPathEnv.c_str());
+        // pythonPathEnvPtr[pythonPathEnv.size()] = '\0';
 
 		char* cl_env = new char[contentLength.size() + 1];
 		strncpy(cl_env, contentLength.c_str(), contentLength.size());
 		cl_env[contentLength.size()] = '\0';
 
-        // char* envp[] = {cl_env, NULL};
-        char* envp[] = {cl_env, pythonPathEnvPtr, NULL};
+        char* envp[] = {cl_env, NULL};
+        // char* envp[] = {cl_env, pythonPathEnvPtr, NULL};
 
 		char* path = new char[cgiPath.size() + 1];
 		strncpy(path, cgiPath.c_str(), cgiPath.size());
@@ -316,7 +315,7 @@ void handle_cgi(std::string cgiPath, int sockfd, Request req) {
 		// std::cerr << "envp: " << envp[0] << std::endl; 
 		if (execve(path, argv, envp) == -1) {
 
-            delete[] pythonPathEnvPtr;
+            // delete[] pythonPathEnvPtr;
 			delete[] cl_env;
 			delete[] path;
 		}
@@ -344,8 +343,7 @@ void handle_cgi(std::string cgiPath, int sockfd, Request req) {
 		// std::cout << cgi_output << std::endl;
 		// std::cout << "------------------------------------" << std::endl;
 		std::string http_response = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: " + std::to_string(cgi_output.length()) + "\r\n\r\n" + cgi_output;
-		send(sockfd, http_response.c_str(), http_response.length(), 0);
-
+        return http_response;
 	}
 }
 
@@ -411,8 +409,8 @@ void    ServerManage::runServer(void) {
     //main loop
     while(true) {
         int event_count = kevent(kq, &changeList[0], server_size, eventList, 8, 0);
+
         changeList.clear();
-        
         if (event_count == -1) {
             // fd 모두 닫기
             throw ErrorException("kevent error");
@@ -426,7 +424,6 @@ void    ServerManage::runServer(void) {
                 // 에러 처리 필요
             }
             if (checkServerIndex(curr_event)) { // 서버 소켓일 경우, 서버 인덱스 값
-                std::cout << "Server event: " << curr_event->ident << std::endl;
                 size_t      index;
 
                 for (index = 0; index < servers.size(); ++index) {
@@ -453,7 +450,7 @@ void    ServerManage::runServer(void) {
                 // 새로운 client 생성
                 std::cout << "Accept new client: " << clnt_fd << std::endl;
             }
-            else { // 0일 경우 클라이언트 소켓 값
+            else { // false일 경우 클라이언트 소켓 값
                 if (curr_event->filter == EVFILT_READ) {
                     std::cout << "Read event: " << curr_event->ident << std::endl;
                 // 클라이언트 소켓일 경우 Reqeust를 읽어야 하기 때문에 아래 else if 문으로 접근(else문의 curr_event->ident는 모두 클라이언트 소켓임)
