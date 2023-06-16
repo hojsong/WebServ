@@ -582,12 +582,8 @@ void    ServerManage::runServer(void) {
                         }
                     }
                     sendResponse(curr_event->ident, servers[index], connects[curr_event->ident].getPath(), responses[curr_event->ident]);
-                    if (responses[curr_event->ident].getCgiStr() != "") {
-                        // close(curr_event->ident);
-                        continue;
-                    }
-                    change_events(curr_event->ident, EVFILT_READ, EV_ADD | EV_ENABLE); // 클라이언트 READ 이벤트 활성화
-                    change_events(curr_event->ident, EVFILT_WRITE, EV_ADD | EV_DISABLE); // 클아이언트 WRITE 이벤트 비활성화
+                    change_events(curr_event->ident, EVFILT_READ, EV_ENABLE); // 클라이언트 READ 이벤트 활성화
+                    change_events(curr_event->ident, EVFILT_WRITE, EV_DISABLE); // 클아이언트 WRITE 이벤트 비활성화
                     connects[curr_event->ident].clearAll(); // 응답을 보냈으므로 안쪽 내용 초기화
                     responses[curr_event->ident].clearAll();
                     std::cout << "response ok" << std::endl;
