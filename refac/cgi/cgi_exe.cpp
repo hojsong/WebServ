@@ -29,6 +29,7 @@ void	exe_Error_page(char *buf, int button, MemberRepository *mr){
 		head_plus(errorpage, 400, buf, mr);
 	}
 	std::cout << errorpage << std::endl;
+	errorpage.clear();
 }
 
 void	exe_Complete_page(char *buf, int button, MemberRepository *mr){
@@ -51,6 +52,7 @@ void	exe_Complete_page(char *buf, int button, MemberRepository *mr){
 		head_plus(errorpage, 200, buf, mr);
 	}
 	std::cout << errorpage << std::endl;
+	errorpage.clear();
 }
 
 void	member_id_chk(char *buf, MemberRepository *mr){

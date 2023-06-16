@@ -3,10 +3,10 @@
 int main(int argc, char **argv){
 	MemberRepository mr;
 	std::string url;
-
+	
 	readFile("memberdb.txt", &mr);
 	if (argc != 2)
-		return (0);	
+		return (0);
 	int button = getButton(argv[1]);
 	url = GetUrl(argv[1]);
 	if (GetBool(argv[1], &mr) == false)
@@ -17,9 +17,10 @@ int main(int argc, char **argv){
 		logined_home(argv[1], &mr);
 	else if (url == "/members/new")
 		member_id_chk(argv[1], &mr);
-	else if (url == "/members")
+	else if (url == "/members.cgi")
 		member_list(argv[1], &mr);
 	else if (url == "/upload/file")
 		POST_FILE(argv[1], &mr);
+	
 	return (0);
 }

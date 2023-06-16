@@ -78,15 +78,18 @@ std::string cgi_differentiation(char *buf, MemberRepository *mr){
     else if (method == 1 && url == "/home")
         result = hj_cgi_execve(buf, mr);
     else if (method == 2 && url == "/members/new"){
+        std::cout << "11111111" << std::endl;
         result = hj_cgi_execve(buf, mr);
-        execveSAVE(buf, mr);
+        //execveSAVE(buf, mr);
     }
     else if ((method == 2 || method == 3 ) && url == "/members/del"){
         result = hj_cgi_execve(buf, mr);
-        execveSAVE(buf, mr);
+        //execveSAVE(buf, mr);
     }
-    else if (method == 2 && url == "/members/logins")
+    else if (method == 2 && url == "/members/logins") {
+        std::cout << "2222222222" << std::endl;
         result = hj_cgi_execve(buf, mr);
+    }
     else if (method == 2 && url == "/upload/file")
         result = hj_cgi_execve(buf, mr);
     else
@@ -99,10 +102,10 @@ std::string hj_cgi_execve(char *buf, MemberRepository *mr){
 	deleteFile("memberdb.txt");
 	saveToFile(mr, "memberdb.txt");
     std::string cgi_output;
-	int cgiInput[2], cgiOutput[2];
+    int cgiPipe[2];
     pid_t pid;
     int status;
-    if (pipe(cgiInput) < 0 || pipe(cgiOutput) < 0) {
+    if (pipe(cgiPipe) < 0) {
         perror("pipe error");
         return "";
     }
@@ -111,30 +114,22 @@ std::string hj_cgi_execve(char *buf, MemberRepository *mr){
         return "";
     }
     if (pid == 0) {
-        dup2(cgiInput[0], 0);
-        dup2(cgiOutput[1], 1);
-        close(cgiInput[1]);
-        close(cgiOutput[0]);
+        dup2(cgiPipe[1], 1);
+        close(cgiPipe[0]);
         char *execPath = const_cast<char*>("cgi.exe");
     	char *args[] = {execPath, buf, NULL};
         execve(execPath, args, NULL);
         exit(0);
     }
     else {
-        close(cgiInput[0]);
-        close(cgiOutput[1]);
-        // write(cgiInput[1], req.getBody().c_str(), req.getBody().size());
-        close(cgiInput[1]);
+        close(cgiPipe[1]);
         char buf[1024];
         ssize_t bytesRead;
-        while ((bytesRead = read(cgiOutput[0], buf, sizeof(buf))) > 0) {
+        while ((bytesRead = read(cgiPipe[0], buf, sizeof(buf))) > 0) {
             cgi_output.append(buf, bytesRead);
         }
-        close(cgiOutput[0]);
+        close(cgiPipe[0]);
         waitpid(pid, &status, 0);
-        // std::cout << "-------------CGI OUTPUT-------------" << std::endl;
-        // std::cout << cgi_output << std::endl;
-        // std::cout << "------------------------------------" << std::endl;
     }
 	return cgi_output;
 }

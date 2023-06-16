@@ -6,6 +6,8 @@
 #define HEADER_READ 0
 #define BODY_READ 1
 #define READ_FINISH 2
+#define WRITE_READY 3
+#define WRITE_FINISH 4
 
 class ParseConfig;
 class Server;
@@ -19,7 +21,6 @@ class ServerManage {
         std::map<int, Response> responses;
         std::vector<struct kevent> changeList;
         std::map<size_t, uintptr_t>clients;
-        std::map<std::string, int>              client_ip;
         // int max_fd;
     
     public:

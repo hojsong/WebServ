@@ -77,8 +77,7 @@ bool    isDirect(Server server, Location loc, std::string request_path) {
     DIR*    dir;
     struct dirent* dp;
 
-    std::string buffer = "./" + server.getRoot() + loc.getPath();
-    std::cerr << buffer << std::endl;
+    std::string buffer = server.getRoot() + loc.getPath();
     dir = opendir(buffer.c_str());
     dp = readdir(dir);
     while (dp != NULL) {
@@ -154,8 +153,8 @@ std::string buildResponse(const std::string& body, Location loc, Server server, 
 ssize_t readData(int fd, char *buffer, size_t buffer_size) {
     ssize_t len = recv(fd, buffer, buffer_size, 0);
     if (len == 0) {
-        std::cout << "client disconnected" << std::endl;
-        return 0;
+        //std::cout << "client disconnected" << std::endl;
+        return (0);
     } else if (len > 0) {
         return len;
     }
@@ -198,21 +197,27 @@ void    processRequest(Request& req) {
 //     return req;
 // }
 
-void    sendResponse(int client_fd, Server &server, std::string req_path, Response res) {
+size_t  sendResponse(int client_fd, Server &server, std::string req_path, Response res) {
     std::vector<Location>  locs = server.getLocations();
     std::string body;
     std::string response;
     bool    is_404 = true;
 
     if (res.getCgiStr().length() != 0){
-        write(client_fd, res.getCgiStr().c_str(), res.getCgiStr().length());
+        size_t len = write(client_fd, res.getCgiStr().c_str(), res.getCgiStr().length());
+        std::cout << "len: " << len << std::endl;
+        if (len == res.getCgiStr().length()) {
+            return WRITE_FINISH;
+        }
     }
     else {
         if (res.getStatusCode() > 400) { // 원래는 200
             body = makeBody(server, req_path, locs[0], res);
             response = buildResponse(body, locs[0], server, res.getStatusCode());
-            write(client_fd, response.c_str(), response.size());
-            return ;
+            size_t len = write(client_fd, response.c_str(), response.size());
+            if (len == response.size()) {
+                return WRITE_FINISH;
+            }
         }
         size_t i;
         for (i = 0; i < locs.size(); i++) {
@@ -231,7 +236,7 @@ void    sendResponse(int client_fd, Server &server, std::string req_path, Respon
                     // write(client_fd, response.c_str(), response.size());
 
                     sendResponse(client_fd, server, return_path, res);
-                    return ;
+                    return WRITE_READY;
                 }
                 body = makeBody(server, req_path, target, res);
                 response = buildResponse(body, target, server, res.getStatusCode());
@@ -249,8 +254,12 @@ void    sendResponse(int client_fd, Server &server, std::string req_path, Respon
             body = makeBody(server, req_path, locs[0], res);
             response = buildResponse(body, locs[0], server, res.getStatusCode());
         }
-        write(client_fd, response.c_str(), response.size());
+        size_t len = write(client_fd, response.c_str(), response.size());
+        if (len == response.size()) {
+            return WRITE_FINISH;
+        }
     }
+    return WRITE_READY;
 }
 
 // void    executeMethodDelete(std::vector<int> server_list, Server serv, std::string req_path) {
@@ -391,6 +400,7 @@ bool ServerManage::checkServerIndex(struct kevent *curr_event) {
 void    ServerManage::runServer(void) {
     int server_size = this->servers.size();
     
+    struct kevent eventList[1024];
     struct kevent *curr_event;
 
     //socket open
@@ -407,14 +417,9 @@ void    ServerManage::runServer(void) {
         change_events(this->servers[i].getServerSocket(), EVFILT_READ, EV_ADD | EV_ENABLE);
     }
     std::cout << "Server Start!" << std::endl;
-    struct timespec time_out;
-    time_out.tv_nsec = 1000;
-    time_out.tv_sec = 0;
     //main loop
     while(true) {
-        struct kevent eventList[server_size];
-        int event_count = kevent(kq, &changeList[0], server_size, eventList, 8, &time_out); // blocking -> X
-        // std::cout << "event count: " << event_count << std::endl;
+        int event_count = kevent(kq, &changeList[0], changeList.size(), eventList, 1024, 0);
 
         changeList.clear();
         if (event_count == -1) {
@@ -423,10 +428,9 @@ void    ServerManage::runServer(void) {
         }
         for (int i = 0; i < event_count; ++i) { // 이벤트 개수만큼 루프 순회
             curr_event = &eventList[i];
-            // std::cout << "First event: " << curr_event->ident << std::endl;
+            std::cout << "First event: " << curr_event->ident << std::endl;
             if (curr_event->flags & EV_ERROR) { // 에러 발생 시
                 //perror("kevent");
-                // close(curr_event->ident);
                 continue;
                 // 에러 처리 필요
             }
@@ -438,28 +442,14 @@ void    ServerManage::runServer(void) {
                         break;
                     }
                 }
-                struct sockaddr_in clientAddr;
-                socklen_t clientAddrLen = sizeof(clientAddr);
-                int clnt_fd = accept(servers[index].getServerSocket(), (struct sockaddr *)&clientAddr, &clientAddrLen);
+                int clnt_fd = accept(servers[index].getServerSocket(), NULL, NULL);
                 if (clnt_fd == -1) {
-                    std::cerr << "accept\n";
                     // 에러 처리
                     continue;
                 }
                 if (fcntl(clnt_fd, F_SETFL, O_NONBLOCK) == -1) {
-                    std::cerr << "fnctl\n";
                         // 에러 처리
                 }
-                std::string clientIP = inet_ntoa(clientAddr.sin_addr);
-                std::map<std::string, int>::iterator it = client_ip.find(clientIP);
-                if (it != client_ip.end()) {
-                    connects[it->second].clearAll(); // 응답을 보냈으므로 안쪽 내용 초기화
-                    responses[it->second].clearAll();
-                    clients.erase(it->second);
-                    close(it->second);
-                    std::cerr << "기존 fd 제거: " << it->second << std::endl;
-                }
-                client_ip[clientIP] = clnt_fd;
                 // 클라이언트 소켓 이벤트 등록(READ와 WRITE 모두 등록하지만 READ부터 해야하기때문에 ENABLE, DISABLE로 구분)
                 change_events(clnt_fd, EVFILT_READ, EV_ADD | EV_ENABLE);
                 change_events(clnt_fd, EVFILT_WRITE, EV_ADD | EV_DISABLE);
@@ -473,13 +463,12 @@ void    ServerManage::runServer(void) {
             }
             else { // false일 경우 클라이언트 소켓 값
                 if (curr_event->filter == EVFILT_READ) {
-                    std::cout << "Read event: " << curr_event->ident << std::endl;
+                    //std::cout << "Read event: " << curr_event->ident << std::endl;
                 // 클라이언트 소켓일 경우 Reqeust를 읽어야 하기 때문에 아래 else if 문으로 접근(else문의 curr_event->ident는 모두 클라이언트 소켓임)
                     char buffer[BUFFER_SIZE + 1];
                     std::memset(buffer, 0, sizeof(buffer));
                     ssize_t len = readData(curr_event->ident, buffer, 4096);
-                    // std::cout << buffer << std::endl;
-                    // std::cout << len << std::endl;
+                    //std::cout << len << std::endl;
                     // len > 0 : 읽을 데이터 있음, len == -1 : 아직 데이터 수신을 완료하지 못했을 수 있으므로 다시 접근, len == 0 : 클라이언트와의 접근이 끊김(close)
                     if (len > 0) {
                         buffer[len] = '\0';
@@ -509,11 +498,12 @@ void    ServerManage::runServer(void) {
                         }
                     }
                     else if (len == 0) { // 클라이언트와의 연결 종료(읽을 데이터가 없을 경우 클라이언트에게서는 0이 아닌 -1 값을 받아옴. 연결이 끊겼을 때(close)만 0 출력됨
-                        // close(curr_event->ident);
-                        continue;
+                        std::cout << "Client " << curr_event->ident << " disconnected." << std::endl;
+                        close(curr_event->ident);
+                        //continue;
                     }
                     else {
-                        // std::cout << "here here!!!!!!!!!!!!!!!!!!!" << std::endl;
+                        //std::cout << "here here!!!!!!!!!!!!!!!!!!!" << std::endl;
                         continue ; // 추후 다시 접근
                     }
                     if (connects[curr_event->ident].getState() == READ_FINISH) { // 데이터를 모두 읽었을 경우 본문 응답 생성
@@ -534,44 +524,48 @@ void    ServerManage::runServer(void) {
                             if (connects[curr_event->ident].getPath() == servers[index].getLocations()[i].getPath())
                                 break;
                         }
-                        if (i == servers[index].getLocations().size())
-                            res.setStatusCode(404);
-                        else {
-                            is_ok = servers[index].getLocations()[i].getMethods(); // is_ok의 경우 각 Method 권한을 가지고 있음. 0일 경우 접근 불가, 1일 경우 접근 가능
-                        }
-                        if (is_ok.size() > 0) { // 접근할 수 있는 Method가 있을 경우
+                        //if (i == servers[index].getLocations().size())
+                        //    res.setStatusCode(404);
+                        //else {
+                        //    is_ok = servers[index].getLocations()[i].getMethods(); // is_ok의 경우 각 Method 권한을 가지고 있음. 0일 경우 접근 불가, 1일 경우 접근 가능
+                        //}
+                        //if (is_ok.size() > 0) { // 접근할 수 있는 Method가 있을 경우
                             // 각 메소드 및 권한을 파악하여 응답 생성
                             if (this->connects[curr_event->ident].getMethod() == "GET") {
                                 std::string cgi_str = cgi_differentiation(buffer, servers[index].getMemberRepository());
+                                //std::cout << "cgi str: " << cgi_str << std::endl;
                                 responses[curr_event->ident].setCgiStr(cgi_str);
                                 std::string body = makeBody(servers[index], connects[curr_event->ident].getPath(), servers[index].getLocations()[index], res);
                                 std::string send_message = buildResponse(body, servers[index].getLocations()[index], servers[index], res.getStatusCode());
                             }
                             else if (this->connects[curr_event->ident].getMethod() == "POST") {
+                                //std::string cgi_path = "cgi-bin/my_cgi.py";
+                                //std::string cgi_str = handle_cgi(cgi_path, connects[curr_event->ident]);
                                 std::string cgi_str = cgi_differentiation(buffer, servers[index].getMemberRepository());
+                                std::cout << "cgi str: " << cgi_str << std::endl;
                                 if (GetComplete(buffer, servers[index].getMemberRepository())){
                                     if (this->connects[curr_event->ident].getMethod() == "DELETE" && is_ok[3] > 0 && std::strstr(buffer, "_method=delete"))
                                         delete_member_true(buffer, servers[index].getMemberRepository());
                                     else
                                         save_true(buffer, servers[index].getMemberRepository());
                                 }
-                                std::cout << "cgi_str: " << cgi_str << std::endl;
                                 responses[curr_event->ident].setCgiStr(cgi_str);
                             }
-                            // else if (this->connects[curr_event->ident].getMethod() == "DELETE" && is_ok[3] > 0) {
+                            else if (this->connects[curr_event->ident].getMethod() == "DELETE") {
                                 
-                            // }
-                        }
-                        // if (this->connects[curr_event->ident].getMethod() == "") {
-                        //     // 없는 method error 처리
-                        // }
+                            }
+                        //}
+                         if (this->connects[curr_event->ident].getMethod() == "") {
+                            std::cout << "없는 method" << std::endl;
+                             // 없는 method error 처리
+                         }
                         // 응답 생성까지 끝났으므로
                         change_events(curr_event->ident, EVFILT_READ, EV_DISABLE); // 클라이언트 READ 이벤트 비활성화
                         change_events(curr_event->ident, EVFILT_WRITE, EV_ENABLE); // 클라이언트 소켓 WRITE 이벤트 활성화
                     }  
                 }
                 else if (curr_event->filter == EVFILT_WRITE) { // 클라이언트 소켓이고, WRITE 이벤트가 생겼을 경우
-                    std::cout << "Write event: " << curr_event->ident << std::endl;
+                    //std::cout << "Write event: " << curr_event->ident << std::endl;
                     uintptr_t   serv_fd;
                     size_t      index;
 
@@ -581,12 +575,15 @@ void    ServerManage::runServer(void) {
                             break;
                         }
                     }
-                    sendResponse(curr_event->ident, servers[index], connects[curr_event->ident].getPath(), responses[curr_event->ident]);
-                    change_events(curr_event->ident, EVFILT_READ, EV_ENABLE); // 클라이언트 READ 이벤트 활성화
-                    change_events(curr_event->ident, EVFILT_WRITE, EV_DISABLE); // 클아이언트 WRITE 이벤트 비활성화
-                    connects[curr_event->ident].clearAll(); // 응답을 보냈으므로 안쪽 내용 초기화
-                    responses[curr_event->ident].clearAll();
-                    std::cout << "response ok" << std::endl;
+                    size_t res = sendResponse(curr_event->ident, servers[index], connects[curr_event->ident].getPath(), responses[curr_event->ident]);
+                    if (res == WRITE_FINISH) {
+                        change_events(curr_event->ident, EVFILT_READ, EV_ENABLE); // 클라이언트 READ 이벤트 활성화
+                        change_events(curr_event->ident, EVFILT_WRITE, EV_DISABLE); // 클아이언트 WRITE 이벤트 비활성화
+                        connects[curr_event->ident].clearAll(); // 응답을 보냈으므로 안쪽 내용 초기화
+                        responses[curr_event->ident].clearAll();
+                        //close(curr_event->ident);
+                        std::cout << "response ok" << std::endl;
+                    }
                 }
             }
         }

@@ -11,8 +11,6 @@ if request_method == "POST":
     post_data = sys.stdin.read(content_length)
 
 # 응답 생성
-print("Status: 200 OK")
-print("Content-Type: text/html")
 print()  # 응답 헤더와 본문을 분리하는 빈 줄
 
 html_response = f"""<!DOCTYPE html>

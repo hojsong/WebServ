@@ -47,7 +47,7 @@ Server::run(void) {
 		exit(1);
 	}
 
-	if (listen(this->server_socket, 5) == -1) {
+	if (listen(this->server_socket, 1000) == -1) {
 		std::cerr << "listen error" << std::endl;
 		exit(1);
 	}
