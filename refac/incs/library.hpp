@@ -3,7 +3,7 @@
 
 //macro
 
-#define BUFFER_SIZE 4096
+#define BUFFER_SIZE 300000
 #define TIMEOUT_SEC 60
 
 //C++

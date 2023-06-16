@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/Users/seongmpa/.brew/bin/python3
 import sys
 import os
 import base64
@@ -17,7 +17,7 @@ if request_method == "POST":
 
 # 이미지를 Base64로 인코드
 image_buffer = BytesIO()
-uploaded_image.save(image_buffer, format="JPEG")
+uploaded_image.save(image_buffer, format="PNG")
 image_base64 = base64.b64encode(image_buffer.getvalue()).decode("utf-8")
 
 # 응답 생성

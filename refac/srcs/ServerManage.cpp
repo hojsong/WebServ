@@ -294,6 +294,13 @@ std::string handle_cgi(std::string cgiPath, Request req) {
 		return "";
 	}
 
+    std::string image = req.getBody();
+
+    size_t pos = image.find("\r\n\r\n");
+    std::string image_data = image.substr(pos + 4);
+    size_t pos2 = image_data.find("------");
+    std::string real_data = image_data.substr(0, pos2);
+    //std::cout << "real data: " << real_data << std::endl;
 	if (pid == 0) {
 		dup2(cgiInput[0], 0);
 		dup2(cgiOutput[1], 1);
@@ -302,18 +309,18 @@ std::string handle_cgi(std::string cgiPath, Request req) {
 
 
 		std::string contentLength = "CONTENT_LENGTH=" + std::to_string(req.getBody().size());
-        // std::string pythonPath = "/opt/homebrew/lib/python3.10/site-packages";  // PIL 모듈이 설치된 디렉토리 경로로 변경해야 합니다.
-        // std::string pythonPathEnv = "PYTHONPATH=" + pythonPath;
-        // char* pythonPathEnvPtr = new char[pythonPathEnv.size() + 1];
-        // std::strcpy(pythonPathEnvPtr, pythonPathEnv.c_str());
-        // pythonPathEnvPtr[pythonPathEnv.size()] = '\0';
+        std::string pythonPath = "/Users/seongmpa/.brew/lib/python3.11/site-packages";  // PIL 모듈이 설치된 디렉토리 경로로 변경해야 합니다.
+        std::string pythonPathEnv = "PYTHONPATH=" + pythonPath;
+        char* pythonPathEnvPtr = new char[pythonPathEnv.size() + 1];
+        std::strcpy(pythonPathEnvPtr, pythonPathEnv.c_str());
+        pythonPathEnvPtr[pythonPathEnv.size()] = '\0';
 
 		char* cl_env = new char[contentLength.size() + 1];
 		strncpy(cl_env, contentLength.c_str(), contentLength.size());
 		cl_env[contentLength.size()] = '\0';
 
-        char* envp[] = {cl_env, NULL};
-        // char* envp[] = {cl_env, pythonPathEnvPtr, NULL};
+        //char* envp[] = {cl_env, NULL};
+        char* envp[] = {cl_env, pythonPathEnvPtr, NULL};
 
 		char* path = new char[cgiPath.size() + 1];
 		strncpy(path, cgiPath.c_str(), cgiPath.size());
@@ -321,12 +328,9 @@ std::string handle_cgi(std::string cgiPath, Request req) {
 
 
 		char* const argv[] = {path, NULL};
-		// std::cerr << "path: " << path << std::endl;
-		// std::cerr << "argv: " << argv[0] << std::endl;
-		// std::cerr << "envp: " << envp[0] << std::endl; 
 		if (execve(path, argv, envp) == -1) {
 
-            // delete[] pythonPathEnvPtr;
+            delete[] pythonPathEnvPtr;
 			delete[] cl_env;
 			delete[] path;
 		}
@@ -336,8 +340,7 @@ std::string handle_cgi(std::string cgiPath, Request req) {
 		close(cgiInput[0]);
 		close(cgiOutput[1]);
 
-        std::string image = req.getBody();
-		write(cgiInput[1], req.getBody().c_str(), req.getBody().size());
+		write(cgiInput[1], real_data.c_str(), real_data.size());
 		close(cgiInput[1]);
 
 		std::string cgi_output;
@@ -350,9 +353,6 @@ std::string handle_cgi(std::string cgiPath, Request req) {
 		close(cgiOutput[0]);
 		waitpid(pid, &status, 0);
 
-		// std::cout << "-------------CGI OUTPUT-------------" << std::endl;
-		// std::cout << cgi_output << std::endl;
-		// std::cout << "------------------------------------" << std::endl;
 		std::string http_response = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: " + std::to_string(cgi_output.length()) + "\r\n\r\n" + cgi_output;
         return http_response;
 	}
@@ -428,7 +428,6 @@ void    ServerManage::runServer(void) {
         }
         for (int i = 0; i < event_count; ++i) { // 이벤트 개수만큼 루프 순회
             curr_event = &eventList[i];
-            std::cout << "First event: " << curr_event->ident << std::endl;
             if (curr_event->flags & EV_ERROR) { // 에러 발생 시
                 //perror("kevent");
                 continue;
@@ -463,47 +462,48 @@ void    ServerManage::runServer(void) {
             }
             else { // false일 경우 클라이언트 소켓 값
                 if (curr_event->filter == EVFILT_READ) {
-                    //std::cout << "Read event: " << curr_event->ident << std::endl;
+                    std::cout << "Read Event: " << curr_event->ident << std::endl;
                 // 클라이언트 소켓일 경우 Reqeust를 읽어야 하기 때문에 아래 else if 문으로 접근(else문의 curr_event->ident는 모두 클라이언트 소켓임)
-                    char buffer[BUFFER_SIZE + 1];
-                    std::memset(buffer, 0, sizeof(buffer));
-                    ssize_t len = readData(curr_event->ident, buffer, 4096);
-                    //std::cout << len << std::endl;
+                    //char buffer[BUFFER_SIZE + 1];
+                    //std::memset(buffer, 0, sizeof(buffer));
+                    std::vector<char> buffer(BUFFER_SIZE);
+                    ssize_t len = readData(curr_event->ident, buffer.data(), BUFFER_SIZE);
                     // len > 0 : 읽을 데이터 있음, len == -1 : 아직 데이터 수신을 완료하지 못했을 수 있으므로 다시 접근, len == 0 : 클라이언트와의 접근이 끊김(close)
                     if (len > 0) {
-                        buffer[len] = '\0';
-                        std::string temp_data = buffer;
+                        buffer.resize(len);
                         if (connects[curr_event->ident].getState() == HEADER_READ) { // State 초기 설정값은 HEADER_READ임
+                            std::string temp_data(buffer.begin(), buffer.end());
                             size_t pos = temp_data.find("\r\n\r\n"); // 헤더와 본문을 구문하는 구분자는 \r\n\r\n
                             if (pos == std::string::npos) { // pos가 npos라는 뜻은 본문이 존재하지 않는 요청
                                 connects[curr_event->ident].appendHeader(temp_data);
                             }
-                            else { // 본문이 존재할 경우
+                            else { // 본문을 읽는데
                                 connects[curr_event->ident].appendHeader(temp_data.substr(0, pos)); // 헤더만 저장
                                 size_t body_size = checkContenLength(this->connects[curr_event->ident].getHeaders()); // Content-Length 헤더의 값 추출
                                 std::string temp_body = temp_data.substr(pos + 4); // 본문 내용 저장(없을 경우 "")
-                                if (!temp_body.empty()) { // 본문이 있을 경우
-                                    connects[curr_event->ident].appendBody(temp_body);
-                                    if (body_size == temp_body.size()) { // Content-Length 값과 가져온 본문의 길이가 일치할 경우 읽기 완료
-                                        connects[curr_event->ident].setState(READ_FINISH); // READ_FINISH로 상태 변경
-                                    }
-                                    else {
-                                        connects[curr_event->ident].setState(BODY_READ); // 아직 읽어야 할 BODY값이 남아 있음.
-                                    }
-                                }
-                                else { // 본문이 없을 경우
+                                connects[curr_event->ident].appendBody(temp_body);
+                                if (body_size == temp_body.size()) { // 본문을 다 읽었을 경우
                                     connects[curr_event->ident].setState(READ_FINISH);
                                 }
+                                else { // 본문을 다 읽지 못했을 경우
+                                    connects[curr_event->ident].setState(BODY_READ);
+                                }
+                            }
+                        }
+                        else if (connects[curr_event->ident].getState() == BODY_READ) {
+                            size_t body_size = checkContenLength(this->connects[curr_event->ident].getHeaders());
+                            std::string temp_body(buffer.begin(), buffer.end());
+                            connects[curr_event->ident].appendBody(temp_body);
+                            if (body_size == connects[curr_event->ident].getBody().size()) {
+                                connects[curr_event->ident].setState(READ_FINISH);
                             }
                         }
                     }
                     else if (len == 0) { // 클라이언트와의 연결 종료(읽을 데이터가 없을 경우 클라이언트에게서는 0이 아닌 -1 값을 받아옴. 연결이 끊겼을 때(close)만 0 출력됨
                         std::cout << "Client " << curr_event->ident << " disconnected." << std::endl;
                         close(curr_event->ident);
-                        //continue;
                     }
                     else {
-                        //std::cout << "here here!!!!!!!!!!!!!!!!!!!" << std::endl;
                         continue ; // 추후 다시 접근
                     }
                     if (connects[curr_event->ident].getState() == READ_FINISH) { // 데이터를 모두 읽었을 경우 본문 응답 생성
@@ -524,6 +524,8 @@ void    ServerManage::runServer(void) {
                             if (connects[curr_event->ident].getPath() == servers[index].getLocations()[i].getPath())
                                 break;
                         }
+                        //std::cout << "Header: " << connects[curr_event->ident].getHeaders() << std::endl;
+                        //std::cout << "Body: " << connects[curr_event->ident].getBody() << std::endl;
                         //if (i == servers[index].getLocations().size())
                         //    res.setStatusCode(404);
                         //else {
@@ -532,23 +534,21 @@ void    ServerManage::runServer(void) {
                         //if (is_ok.size() > 0) { // 접근할 수 있는 Method가 있을 경우
                             // 각 메소드 및 권한을 파악하여 응답 생성
                             if (this->connects[curr_event->ident].getMethod() == "GET") {
-                                std::string cgi_str = cgi_differentiation(buffer, servers[index].getMemberRepository(), connects[curr_event->ident]);
-                                //std::cout << "cgi str: " << cgi_str << std::endl;
-                                responses[curr_event->ident].setCgiStr(cgi_str);
-                                std::string body = makeBody(servers[index], connects[curr_event->ident].getPath(), servers[index].getLocations()[index], res);
-                                std::string send_message = buildResponse(body, servers[index].getLocations()[index], servers[index], res.getStatusCode());
+                                //std::string cgi_str = cgi_differentiation(buffer, servers[index].getMemberRepository(), connects[curr_event->ident]);
+                                //responses[curr_event->ident].setCgiStr(cgi_str);
+                                //std::string body = makeBody(servers[index], connects[curr_event->ident].getPath(), servers[index].getLocations()[index], res);
+                                //std::string send_message = buildResponse(body, servers[index].getLocations()[index], servers[index], res.getStatusCode());
                             }
                             else if (this->connects[curr_event->ident].getMethod() == "POST") {
-                                //std::string cgi_path = "cgi-bin/my_cgi.py";
-                                //std::string cgi_str = handle_cgi(cgi_path, connects[curr_event->ident]);
-                                std::string cgi_str = cgi_differentiation(buffer, servers[index].getMemberRepository(), connects[curr_event->ident]);
-                                std::cout << "cgi str: " << cgi_str << std::endl;
-                                if (GetComplete(buffer, servers[index].getMemberRepository())){
-                                    if (this->connects[curr_event->ident].getMethod() == "DELETE" && is_ok[3] > 0 && std::strstr(buffer, "_method=delete"))
-                                        delete_member_true(buffer, servers[index].getMemberRepository());
-                                    else
-                                        save_true(buffer, servers[index].getMemberRepository());
-                                }
+                                std::string cgi_path = "cgi-bin/image_cgi.py";
+                                std::string cgi_str = handle_cgi(cgi_path, connects[curr_event->ident]);
+                                //std::string cgi_str = cgi_differentiation(buffer, servers[index].getMemberRepository(), connects[curr_event->ident]);
+                                //if (GetComplete(buffer, servers[index].getMemberRepository())){
+                                //    if (this->connects[curr_event->ident].getMethod() == "DELETE" && is_ok[3] > 0 && std::strstr(buffer, "_method=delete"))
+                                //        delete_member_true(buffer, servers[index].getMemberRepository());
+                                //    else
+                                //        save_true(buffer, servers[index].getMemberRepository());
+                                //}
                                 responses[curr_event->ident].setCgiStr(cgi_str);
                             }
                             else if (this->connects[curr_event->ident].getMethod() == "DELETE") {
@@ -565,7 +565,6 @@ void    ServerManage::runServer(void) {
                     }  
                 }
                 else if (curr_event->filter == EVFILT_WRITE) { // 클라이언트 소켓이고, WRITE 이벤트가 생겼을 경우
-                    //std::cout << "Write event: " << curr_event->ident << std::endl;
                     uintptr_t   serv_fd;
                     size_t      index;
 
@@ -581,7 +580,6 @@ void    ServerManage::runServer(void) {
                         change_events(curr_event->ident, EVFILT_WRITE, EV_DISABLE); // 클아이언트 WRITE 이벤트 비활성화
                         connects[curr_event->ident].clearAll(); // 응답을 보냈으므로 안쪽 내용 초기화
                         responses[curr_event->ident].clearAll();
-                        //close(curr_event->ident);
                         std::cout << "response ok" << std::endl;
                     }
                 }
