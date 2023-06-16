@@ -99,7 +99,9 @@ void	delete_member_true(char *buf, MemberRepository *mr){
 	if (std::strstr(buf, "_method=delete") && getButton(buf) == 4) {
 		std::string id = getValue(buf, "id=");
 		std::string password = getValue(buf, "password=");
-		mr->memberWithdrawal(id, password);
+		if(mr->memberWithdrawal(id, password) == true){
+			std::cout << "Success" << std::endl;
+		}
 	}
 }
 

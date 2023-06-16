@@ -54,6 +54,7 @@ fclean : clean
 	@$(RM) $(NAME)
 	@$(RM) $(NAME2)
 	@rm -rf memberdb.txt
+	@rm -rf file/*
 
 re : fclean all
 

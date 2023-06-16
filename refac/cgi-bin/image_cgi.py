@@ -1,4 +1,4 @@
-#!/Users/seongmpa/.brew/bin/python3
+#!/usr/bin/python3
 import sys
 import os
 import base64

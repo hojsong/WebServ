@@ -29,6 +29,8 @@ bool MemberRepository::memberWithdrawal(std::string id, std::string password){
 		if (member[i].getById() == id)
 			break;
 	}
+	if (i == member.size())
+		return false;
 	if (member[i].getPassword() == password){
 		member.erase(member.begin() + i);
 		return true;

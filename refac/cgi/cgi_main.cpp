@@ -4,11 +4,14 @@ int main(int argc, char **argv){
 	MemberRepository mr;
 	std::string url;
 	
-	readFile("memberdb.txt", &mr);
+	if (readFile("memberdb.txt", &mr) == false)
+		return (0);
 	if (argc != 2)
 		return (0);
-	int button = getButton(argv[1]);
 	url = GetUrl(argv[1]);
+	if (url.length() == 0)
+		return (0);
+	int button = getButton(argv[1]);
 	if (GetBool(argv[1], &mr) == false)
 		exe_Error_page(argv[1], button, &mr);
 	if (GetComplete(argv[1], &mr) == true)

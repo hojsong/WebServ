@@ -64,7 +64,7 @@ void	Location::setMethods(std::vector<std::string> param) {
     buffer[0] = 1;
     buffer[1] = 0;
     buffer[2] = 1;
-    buffer[3] = 0;
+    buffer[3] = 1;
     buffer[4] = 0;
 
     for (size_t i = 0; i < param.size(); i++) {

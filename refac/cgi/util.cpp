@@ -1,6 +1,6 @@
 #include "cgi.hpp"
 
-void readFile(const std::string& filename, MemberRepository *mr) {
+bool readFile(const std::string& filename, MemberRepository *mr) {
     std::ifstream file(filename);
     if (file.is_open()) {
         std::string line;
@@ -17,7 +17,9 @@ void readFile(const std::string& filename, MemberRepository *mr) {
 			delete[] charPtr;
         }
         file.close();
+		return true;
     }
+	return false;
 }
 
 void readMR(MemberRepository *mr){

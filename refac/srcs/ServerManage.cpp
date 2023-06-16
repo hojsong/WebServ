@@ -526,35 +526,37 @@ void    ServerManage::runServer(void) {
                         }
                         //std::cout << "Header: " << connects[curr_event->ident].getHeaders() << std::endl;
                         //std::cout << "Body: " << connects[curr_event->ident].getBody() << std::endl;
-                        //if (i == servers[index].getLocations().size())
-                        //    res.setStatusCode(404);
-                        //else {
-                        //    is_ok = servers[index].getLocations()[i].getMethods(); // is_ok의 경우 각 Method 권한을 가지고 있음. 0일 경우 접근 불가, 1일 경우 접근 가능
-                        //}
-                        //if (is_ok.size() > 0) { // 접근할 수 있는 Method가 있을 경우
+                        if (i == servers[index].getLocations().size())
+                           res.setStatusCode(404);
+                        else {
+                           is_ok = servers[index].getLocations()[i].getMethods(); // is_ok의 경우 각 Method 권한을 가지고 있음. 0일 경우 접근 불가, 1일 경우 접근 가능
+                        }
+                        if (is_ok.size() > 0) { // 접근할 수 있는 Method가 있을 경우
                             // 각 메소드 및 권한을 파악하여 응답 생성
                             if (this->connects[curr_event->ident].getMethod() == "GET") {
-                                //std::string cgi_str = cgi_differentiation(buffer, servers[index].getMemberRepository(), connects[curr_event->ident]);
-                                //responses[curr_event->ident].setCgiStr(cgi_str);
-                                //std::string body = makeBody(servers[index], connects[curr_event->ident].getPath(), servers[index].getLocations()[index], res);
-                                //std::string send_message = buildResponse(body, servers[index].getLocations()[index], servers[index], res.getStatusCode());
+                                std::string cgi_str = cgi_differentiation(servers[index].getMemberRepository(), connects[curr_event->ident]);
+                                responses[curr_event->ident].setCgiStr(cgi_str);
+                                std::string body = makeBody(servers[index], connects[curr_event->ident].getPath(), servers[index].getLocations()[index], res);
+                                std::string send_message = buildResponse(body, servers[index].getLocations()[index], servers[index], res.getStatusCode());
                             }
                             else if (this->connects[curr_event->ident].getMethod() == "POST") {
-                                std::string cgi_path = "cgi-bin/image_cgi.py";
-                                std::string cgi_str = handle_cgi(cgi_path, connects[curr_event->ident]);
-                                //std::string cgi_str = cgi_differentiation(buffer, servers[index].getMemberRepository(), connects[curr_event->ident]);
-                                //if (GetComplete(buffer, servers[index].getMemberRepository())){
-                                //    if (this->connects[curr_event->ident].getMethod() == "DELETE" && is_ok[3] > 0 && std::strstr(buffer, "_method=delete"))
-                                //        delete_member_true(buffer, servers[index].getMemberRepository());
-                                //    else
-                                //        save_true(buffer, servers[index].getMemberRepository());
-                                //}
+                                // std::string cgi_path = "cgi-bin/image_cgi.py";
+                                // std::string cgi_str = handle_cgi(cgi_path, connects[curr_event->ident]);
+                                std::string cgi_str = cgi_differentiation(servers[index].getMemberRepository(), connects[curr_event->ident]);
+                                std::string str = connects[curr_event->ident].getHeaders() + "\r\n\r\n" + connects[curr_event->ident].getBody();
+                                char *buf = const_cast<char *>(str.c_str());
+                                if (GetComplete(buf, servers[index].getMemberRepository())){
+                                   if (is_ok[3] > 0 && std::strstr(buf, "_method=delete"))
+                                       delete_member_true(buf, servers[index].getMemberRepository());
+                                   else 
+                                       save_true(buf, servers[index].getMemberRepository());
+                                }
                                 responses[curr_event->ident].setCgiStr(cgi_str);
                             }
                             else if (this->connects[curr_event->ident].getMethod() == "DELETE") {
                                 
                             }
-                        //}
+                        }
                          if (this->connects[curr_event->ident].getMethod() == "") {
                             std::cout << "없는 method" << std::endl;
                              // 없는 method error 처리

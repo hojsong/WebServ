@@ -18,7 +18,6 @@
 std::string GetUrl(char *buf);
 std::string getValue(char *buf, const char *value);
 void		saveToFile(MemberRepository *mr, const std::string& filename);
-void		readFile(const std::string& filename, MemberRepository *mr);
 void		text_change(std::string& str, const std::string findstr, const std::string value);
 void		create_changer(char *buf, std::string &str, bool set);
 int			getButton(char *buf);
@@ -26,7 +25,7 @@ bool		execveID_CHK(char *buf, MemberRepository *mr);
 bool		execveSAVE(char *buf, MemberRepository *mr);
 bool		execveLogin(char *buf, MemberRepository *mr);
 void 		URl_execve(char *buf, std::string &str, MemberRepository *mr, Member me);
-void		readFile(const std::string& filename, MemberRepository *mr);
+bool		readFile(const std::string& filename, MemberRepository *mr);
 void		readMR(MemberRepository *mr);
 void		member_list(char *buf, MemberRepository *mr);
 void		member_id_chk(char *buf, MemberRepository *mr);

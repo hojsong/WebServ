@@ -68,28 +68,27 @@ int method_cgi_differentiation(char *buf){
     return (0);
 }
 
-std::string cgi_differentiation(char *buf, MemberRepository *mr, Request req){
+std::string cgi_differentiation(MemberRepository *mr, Request req){
     std::string result;
+    std::string str = req.getHeaders() + "\r\n\r\n" + req.getBody();
+    char *buf = const_cast<char *>(str.c_str());
 
     int method = method_cgi_differentiation(buf);
+    if (method == 0)
+        return "";
     std::string url = GetUrl(buf);
+    if (url.length() == 0)
+        return "";
     if (method == 1 && url == "/members")
         result = hj_cgi_execve(buf, mr);
     else if (method == 1 && url == "/home")
         result = hj_cgi_execve(buf, mr);
-    else if (method == 2 && url == "/members/new"){
-        std::cout << "11111111" << std::endl;
+    else if (method == 2 && url == "/members/new")
         result = hj_cgi_execve(buf, mr);
-        //execveSAVE(buf, mr);
-    }
-    else if ((method == 2 || method == 3 ) && url == "/members/del"){
+    else if ((method == 2 || method == 3 ) && url == "/members/del")
         result = hj_cgi_execve(buf, mr);
-        //execveSAVE(buf, mr);
-    }
-    else if (method == 2 && url == "/members/logins") {
-        std::cout << "2222222222" << std::endl;
+    else if (method == 2 && url == "/members/logins") 
         result = hj_cgi_execve(buf, mr);
-    }
     else if (method == 2 && url == "/upload/file")
         result = hj_cgi_execve(buf, mr);
     else if (method == 2)
