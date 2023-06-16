@@ -438,7 +438,9 @@ void    ServerManage::runServer(void) {
                         break;
                     }
                 }
-                int clnt_fd = accept(servers[index].getServerSocket(), NULL, NULL);
+                struct sockaddr_in clientAddr;
+                socklen_t clientAddrLen = sizeof(clientAddr);
+                int clnt_fd = accept(servers[index].getServerSocket(), (struct sockaddr *)&clientAddr, &clientAddrLen);
                 if (clnt_fd == -1) {
                     std::cerr << "accept\n";
                     // 에러 처리
@@ -448,6 +450,16 @@ void    ServerManage::runServer(void) {
                     std::cerr << "fnctl\n";
                         // 에러 처리
                 }
+                std::string clientIP = inet_ntoa(clientAddr.sin_addr);
+                std::map<std::string, int>::iterator it = client_ip.find(clientIP);
+                if (it != client_ip.end()) {
+                    connects[it->second].clearAll(); // 응답을 보냈으므로 안쪽 내용 초기화
+                    responses[it->second].clearAll();
+                    clients.erase(it->second);
+                    close(it->second);
+                    std::cerr << "기존 fd 제거: " << it->second << std::endl;
+                }
+                client_ip[clientIP] = clnt_fd;
                 // 클라이언트 소켓 이벤트 등록(READ와 WRITE 모두 등록하지만 READ부터 해야하기때문에 ENABLE, DISABLE로 구분)
                 change_events(clnt_fd, EVFILT_READ, EV_ADD | EV_ENABLE);
                 change_events(clnt_fd, EVFILT_WRITE, EV_ADD | EV_DISABLE);

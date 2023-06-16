@@ -19,6 +19,7 @@ class ServerManage {
         std::map<int, Response> responses;
         std::vector<struct kevent> changeList;
         std::map<size_t, uintptr_t>clients;
+        std::map<std::string, int>              client_ip;
         // int max_fd;
     
     public:
