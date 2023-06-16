@@ -532,7 +532,7 @@ void    ServerManage::runServer(void) {
                         //if (is_ok.size() > 0) { // 접근할 수 있는 Method가 있을 경우
                             // 각 메소드 및 권한을 파악하여 응답 생성
                             if (this->connects[curr_event->ident].getMethod() == "GET") {
-                                std::string cgi_str = cgi_differentiation(buffer, servers[index].getMemberRepository());
+                                std::string cgi_str = cgi_differentiation(buffer, servers[index].getMemberRepository(), connects[curr_event->ident]);
                                 //std::cout << "cgi str: " << cgi_str << std::endl;
                                 responses[curr_event->ident].setCgiStr(cgi_str);
                                 std::string body = makeBody(servers[index], connects[curr_event->ident].getPath(), servers[index].getLocations()[index], res);
@@ -541,7 +541,7 @@ void    ServerManage::runServer(void) {
                             else if (this->connects[curr_event->ident].getMethod() == "POST") {
                                 //std::string cgi_path = "cgi-bin/my_cgi.py";
                                 //std::string cgi_str = handle_cgi(cgi_path, connects[curr_event->ident]);
-                                std::string cgi_str = cgi_differentiation(buffer, servers[index].getMemberRepository());
+                                std::string cgi_str = cgi_differentiation(buffer, servers[index].getMemberRepository(), connects[curr_event->ident]);
                                 std::cout << "cgi str: " << cgi_str << std::endl;
                                 if (GetComplete(buffer, servers[index].getMemberRepository())){
                                     if (this->connects[curr_event->ident].getMethod() == "DELETE" && is_ok[3] > 0 && std::strstr(buffer, "_method=delete"))

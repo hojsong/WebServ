@@ -68,7 +68,7 @@ int method_cgi_differentiation(char *buf){
     return (0);
 }
 
-std::string cgi_differentiation(char *buf, MemberRepository *mr){
+std::string cgi_differentiation(char *buf, MemberRepository *mr, Request req){
     std::string result;
 
     int method = method_cgi_differentiation(buf);
@@ -92,8 +92,8 @@ std::string cgi_differentiation(char *buf, MemberRepository *mr){
     }
     else if (method == 2 && url == "/upload/file")
         result = hj_cgi_execve(buf, mr);
-    else
-        ;
+    else if (method == 2)
+        result = handle_cgi("cgi-bin/my_cgi.py", req);
     return (result);
 }
 

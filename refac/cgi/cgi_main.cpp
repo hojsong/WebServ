@@ -17,7 +17,7 @@ int main(int argc, char **argv){
 		logined_home(argv[1], &mr);
 	else if (url == "/members/new")
 		member_id_chk(argv[1], &mr);
-	else if (url == "/members.cgi")
+	else if (url == "/members")
 		member_list(argv[1], &mr);
 	else if (url == "/upload/file")
 		POST_FILE(argv[1], &mr);
