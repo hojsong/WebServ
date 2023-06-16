@@ -77,7 +77,8 @@ bool    isDirect(Server server, Location loc, std::string request_path) {
     DIR*    dir;
     struct dirent* dp;
 
-    std::string buffer = server.getRoot() + loc.getPath();
+    std::string buffer = "./" + server.getRoot() + loc.getPath();
+    std::cerr << buffer << std::endl;
     dir = opendir(buffer.c_str());
     dp = readdir(dir);
     while (dp != NULL) {
@@ -153,7 +154,8 @@ std::string buildResponse(const std::string& body, Location loc, Server server, 
 ssize_t readData(int fd, char *buffer, size_t buffer_size) {
     ssize_t len = recv(fd, buffer, buffer_size, 0);
     if (len == 0) {
-        //std::cout << "client disconnected" << std::endl;
+        std::cout << "client disconnected" << std::endl;
+        return 0;
     } else if (len > 0) {
         return len;
     }
@@ -424,7 +426,7 @@ void    ServerManage::runServer(void) {
             // std::cout << "First event: " << curr_event->ident << std::endl;
             if (curr_event->flags & EV_ERROR) { // 에러 발생 시
                 //perror("kevent");
-                close(curr_event->ident);
+                // close(curr_event->ident);
                 continue;
                 // 에러 처리 필요
             }
@@ -438,10 +440,12 @@ void    ServerManage::runServer(void) {
                 }
                 int clnt_fd = accept(servers[index].getServerSocket(), NULL, NULL);
                 if (clnt_fd == -1) {
+                    std::cerr << "accept\n";
                     // 에러 처리
                     continue;
                 }
                 if (fcntl(clnt_fd, F_SETFL, O_NONBLOCK) == -1) {
+                    std::cerr << "fnctl\n";
                         // 에러 처리
                 }
                 // 클라이언트 소켓 이벤트 등록(READ와 WRITE 모두 등록하지만 READ부터 해야하기때문에 ENABLE, DISABLE로 구분)
@@ -493,8 +497,8 @@ void    ServerManage::runServer(void) {
                         }
                     }
                     else if (len == 0) { // 클라이언트와의 연결 종료(읽을 데이터가 없을 경우 클라이언트에게서는 0이 아닌 -1 값을 받아옴. 연결이 끊겼을 때(close)만 0 출력됨
-                        close(curr_event->ident);
-                        //continue;
+                        // close(curr_event->ident);
+                        continue;
                     }
                     else {
                         // std::cout << "here here!!!!!!!!!!!!!!!!!!!" << std::endl;
@@ -542,9 +546,9 @@ void    ServerManage::runServer(void) {
                                 std::cout << "cgi_str: " << cgi_str << std::endl;
                                 responses[curr_event->ident].setCgiStr(cgi_str);
                             }
-                            else if (this->connects[curr_event->ident].getMethod() == "DELETE" && is_ok[3] > 0) {
+                            // else if (this->connects[curr_event->ident].getMethod() == "DELETE" && is_ok[3] > 0) {
                                 
-                            }
+                            // }
                         }
                         // if (this->connects[curr_event->ident].getMethod() == "") {
                         //     // 없는 method error 처리
@@ -567,7 +571,7 @@ void    ServerManage::runServer(void) {
                     }
                     sendResponse(curr_event->ident, servers[index], connects[curr_event->ident].getPath(), responses[curr_event->ident]);
                     if (responses[curr_event->ident].getCgiStr() != "") {
-                        close(curr_event->ident);
+                        // close(curr_event->ident);
                         continue;
                     }
                     change_events(curr_event->ident, EVFILT_READ, EV_ADD | EV_ENABLE); // 클라이언트 READ 이벤트 활성화
