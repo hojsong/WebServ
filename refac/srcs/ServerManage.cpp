@@ -37,6 +37,7 @@ std::string makeAutoindex(Location loc, Server server) {
 }
 
 std::string readFilePath(std::string file_path, std::map<int, std::string> errors) {
+    printf("%s\n",file_path.c_str());
     std::ifstream   file(file_path);
     if (file.is_open()) {
         std::ostringstream os;
@@ -79,6 +80,8 @@ bool    isDirect(Server server, Location loc, std::string request_path) {
 
     std::string buffer = server.getRoot() + loc.getPath();
     dir = opendir(buffer.c_str());
+    if (dir == NULL)
+        return false;
     dp = readdir(dir);
     while (dp != NULL) {
         std::string dir_name(dp->d_name);
@@ -262,22 +265,21 @@ size_t  sendResponse(int client_fd, Server &server, std::string req_path, Respon
     return WRITE_READY;
 }
 
-// void    executeMethodDelete(std::vector<int> server_list, Server serv, std::string req_path) {
-//     std::ifstream ifs(req_path.c_str());
+ void    executeMethodDelete(std::string req_path, Response res) {
+    std::ifstream ifs(req_path.c_str());
 
-//     if (!ifs.good()) {
-//         sendResponse(server_list.back(), serv, req_path, 404);
-//         return ;
-//     }
-//     ifs.close();
+    if (!ifs.good()) {
+        res.setStatusCode(404);
+        return ;
+    }
+    ifs.close();
+    if (unlink(req_path.c_str()) == 0) {
+        res.setStatusCode(403);
+    }
+    else
+        res.setStatusCode(204);
 
-//     if (unlink(req_path.c_str()) == 0) {
-//         sendResponse(server_list.back(), serv, req_path, 200);
-//     } else {
-//         sendResponse(server_list.back(), serv, req_path, 500);
-//     }
-
-// }
+ }
 
 std::string handle_cgi(std::string cgiPath, Request req) {
     int cgiInput[2], cgiOutput[2];
@@ -526,6 +528,7 @@ void    ServerManage::runServer(void) {
                         }
                         //std::cout << "Header: " << connects[curr_event->ident].getHeaders() << std::endl;
                         //std::cout << "Body: " << connects[curr_event->ident].getBody() << std::endl;
+                        std::cout << i << std::endl;
                         if (i == servers[index].getLocations().size())
                            res.setStatusCode(404);
                         else {
@@ -540,8 +543,6 @@ void    ServerManage::runServer(void) {
                                 std::string send_message = buildResponse(body, servers[index].getLocations()[index], servers[index], res.getStatusCode());
                             }
                             else if (this->connects[curr_event->ident].getMethod() == "POST") {
-                                // std::string cgi_path = "cgi-bin/image_cgi.py";
-                                // std::string cgi_str = handle_cgi(cgi_path, connects[curr_event->ident]);
                                 std::string cgi_str = cgi_differentiation(servers[index].getMemberRepository(), connects[curr_event->ident]);
                                 std::string str = connects[curr_event->ident].getHeaders() + "\r\n\r\n" + connects[curr_event->ident].getBody();
                                 char *buf = const_cast<char *>(str.c_str());
@@ -554,7 +555,7 @@ void    ServerManage::runServer(void) {
                                 responses[curr_event->ident].setCgiStr(cgi_str);
                             }
                             else if (this->connects[curr_event->ident].getMethod() == "DELETE") {
-                                
+                                executeMethodDelete(connects[curr_event->ident].getPath(), responses[curr_event->ident]);
                             }
                         }
                          if (this->connects[curr_event->ident].getMethod() == "") {

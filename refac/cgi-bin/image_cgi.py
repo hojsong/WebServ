@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/Users/seongmpa/.brew/bin/python3
 import sys
 import os
 import base64
@@ -21,8 +21,6 @@ uploaded_image.save(image_buffer, format="PNG")
 image_base64 = base64.b64encode(image_buffer.getvalue()).decode("utf-8")
 
 # 응답 생성
-print("Status: 200 OK")
-print("Content-Type: text/html; image/png")
 print()  # 응답 헤더와 본문을 분리하는 빈 줄
 
 html_response = f"""<!DOCTYPE html>
