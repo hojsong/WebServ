@@ -112,7 +112,6 @@ std::string makeBody(Server server, std::string request_path, Location loc, Resp
     std::string body;
     if (isDirect(server, loc, "." + request_path) == true) {
         std::string file_path = "." + request_path;
-        std::cout << file_path << std::endl;
         body = readFilePath(file_path, errors);
         return body;
     } else if (loc.getAutoindex() == true) {
@@ -165,7 +164,6 @@ std::string buildResponse(const std::string& body, Location loc, Server server, 
 ssize_t readData(int fd, char *buffer, size_t buffer_size) {
     ssize_t len = recv(fd, buffer, buffer_size, 0);
     if (len == 0) {
-        //std::cout << "client disconnected" << std::endl;
         return (0);
     } else if (len > 0) {
         return len;
@@ -193,22 +191,6 @@ void    processRequest(Request& req) {
     req.setHeaderData(tmpData);
 }
 
-// Request processRequest(const char *buffer, ssize_t len) {
-//     std::istringstream is(std::string(buffer, len));
-//     std::string line;
-//     std::ostringstream os;
-
-//     // std::cout << "----------------------------------------" << std::endl;
-//     while (std::getline(is, line)) {
-//         // std::cout << line << std::endl;
-//         os << line;
-//     }
-
-//     std::vector<std::string> buf = splitArgs(os.str(), " ");
-//     Request req(buf);
-//     return req;
-// }
-
 size_t  sendResponse(int client_fd, Server &server, std::string req_path, Response& res) {
     std::vector<Location>  locs = server.getLocations();
     std::string body;
@@ -225,15 +207,15 @@ size_t  sendResponse(int client_fd, Server &server, std::string req_path, Respon
             write(client_fd, response.c_str(), response.size());
             return WRITE_FINISH;
         }
-        else if (res.getStatusCode() == 403) {
-            response = "HTTP/1.1 403 Forbidden\r\nContent-Length: 19\r\nContent-Type: text/plain; charset=utf-8\r\n\r\nAccess denied: 403\r\n";
-            write(client_fd, response.c_str(), response.size());
-            return WRITE_FINISH;
-        }
         else if (res.getStatusCode() == 307) {
             response = "HTTP/1.1 307 Temporary Redirect\r\nLocation: " + res.getReturnValue() + "\r\n";
             res.setStatusCode(200);
             sendResponse(client_fd, server, res.getReturnValue(), res);
+            return WRITE_FINISH;
+        }
+        else if (res.getStatusCode() == 403) {
+            response = "HTTP/1.1 403 Forbidden\r\nContent-Length: 19\r\nContent-Type: text/plain; charset=utf-8\r\n\r\nAccess denied: 403\r\n";
+            write(client_fd, response.c_str(), response.size());
             return WRITE_FINISH;
         }
         else if (res.getStatusCode() > 400) { // 원래는 200
@@ -314,7 +296,6 @@ std::string handle_cgi(std::string cgiPath, Request req) {
     std::string image_data = image.substr(pos + 4);
     size_t pos2 = image_data.find("------");
     std::string real_data = image_data.substr(0, pos2);
-    //std::cout << "real data: " << real_data << std::endl;
 	if (pid == 0) {
 		dup2(cgiInput[0], 0);
 		dup2(cgiOutput[1], 1);
@@ -333,7 +314,6 @@ std::string handle_cgi(std::string cgiPath, Request req) {
 		strncpy(cl_env, contentLength.c_str(), contentLength.size());
 		cl_env[contentLength.size()] = '\0';
 
-        //char* envp[] = {cl_env, NULL};
         char* envp[] = {cl_env, pythonPathEnvPtr, NULL};
 
 		char* path = new char[cgiPath.size() + 1];
@@ -482,9 +462,7 @@ void    ServerManage::runServer(void) {
         for (int i = 0; i < event_count; ++i) { // 이벤트 개수만큼 루프 순회
             curr_event = &eventList[i];
             if (curr_event->flags & EV_ERROR) { // 에러 발생 시
-                //perror("kevent");
                 continue;
-                // 에러 처리 필요
             }
             if (checkServerIndex(curr_event)) { // 서버 소켓일 경우, 서버 인덱스 값
                 size_t      index;
@@ -500,7 +478,7 @@ void    ServerManage::runServer(void) {
                     continue;
                 }
                 if (fcntl(clnt_fd, F_SETFL, O_NONBLOCK) == -1) {
-                        // 에러 처리
+                    // 에러 처리
                 }
                 // 클라이언트 소켓 이벤트 등록(READ와 WRITE 모두 등록하지만 READ부터 해야하기때문에 ENABLE, DISABLE로 구분)
                 change_events(clnt_fd, EVFILT_READ, EV_ADD | EV_ENABLE);
@@ -516,8 +494,6 @@ void    ServerManage::runServer(void) {
             else { // false일 경우 클라이언트 소켓 값
                 if (curr_event->filter == EVFILT_READ) {
                 // 클라이언트 소켓일 경우 Reqeust를 읽어야 하기 때문에 아래 else if 문으로 접근(else문의 curr_event->ident는 모두 클라이언트 소켓임)
-                    //char buffer[BUFFER_SIZE + 1];
-                    //std::memset(buffer, 0, sizeof(buffer));
                     std::vector<char> buffer(BUFFER_SIZE);
                     ssize_t len = readData(curr_event->ident, buffer.data(), BUFFER_SIZE);
                     // len > 0 : 읽을 데이터 있음, len == -1 : 아직 데이터 수신을 완료하지 못했을 수 있으므로 다시 접근, len == 0 : 클라이언트와의 접근이 끊김(close)
@@ -552,7 +528,7 @@ void    ServerManage::runServer(void) {
                         }
                     }
                     else if (len == 0) { // 클라이언트와의 연결 종료(읽을 데이터가 없을 경우 클라이언트에게서는 0이 아닌 -1 값을 받아옴. 연결이 끊겼을 때(close)만 0 출력됨
-                        // std::cout << "Client " << curr_event->ident << " disconnected." << std::endl;
+                        std::cout << "Client " << curr_event->ident << " disconnected." << std::endl;
                         // std::string disc = "Set-Cookie: expires=Thu, 01-Jan-1970 00:00:01; GMT path=/";
                         // if (write(curr_event->ident, disc.c_str(), disc.length()) == -1)
                             // std::cout << "Cookie reset Fail; "<< std::endl;
@@ -607,7 +583,7 @@ void    ServerManage::runServer(void) {
                                 std::string str = connects[curr_event->ident].getHeaders() + "\r\n\r\n" + connects[curr_event->ident].getBody();
                                 char *buf = const_cast<char *>(str.c_str());
                                 if (GetComplete(buf, servers[index].getMemberRepository())){
-                                   if (is_ok[2] > 0 && std::strstr(buf, "_method=delete"))
+                                   if (std::strstr(buf, "_method=delete") && is_ok[2] > 0)
                                        delete_member_true(buf, servers[index].getMemberRepository());
                                    else 
                                        save_true(buf, servers[index].getMemberRepository());
