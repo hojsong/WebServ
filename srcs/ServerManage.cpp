@@ -400,7 +400,7 @@ bool ServerManage::checkServerIndex(struct kevent *curr_event) {
     return false;
 }
 
-void    urlSearch(Request req, std::vector<Location> locations){
+void    urlSearch(Request &req, std::vector<Location> locations){
     std::string str = "";
     std::string file = "";
     size_t      slen = 0;
@@ -415,6 +415,9 @@ void    urlSearch(Request req, std::vector<Location> locations){
             file = req.getPath().substr(pos + locations[i].getPath().size());
         }
     }
+    std::cout << str << std::endl;
+    std::cout << file << std::endl;
+
     req.setPath(str);
     req.setBody(file);
 }
@@ -544,10 +547,11 @@ void    ServerManage::runServer(void) {
                                 break;
                             }
                         }
+                        processRequest(this->connects[curr_event->ident]);
                         if (this->connects[curr_event->ident].getMethod() == "DELETE"){
                             urlSearch(this->connects[curr_event->ident], servers[index].getLocations());
+                            std::cout << "path:" <<connects[curr_event->ident].getPath() << std::endl;
                         }
-                        processRequest(this->connects[curr_event->ident]);
                         for (i = 0; i < servers[index].getLocations().size(); i++) {
                             if (connects[curr_event->ident].getPath() == servers[index].getLocations()[i].getPath())
                                 break;
@@ -564,12 +568,14 @@ void    ServerManage::runServer(void) {
                         if (is_ok.size() > 0) { // 접근할 수 있는 Method가 있을 경우
                             // 각 메소드 및 권한을 파악하여 응답 생성
                             if (this->connects[curr_event->ident].getMethod() == "GET") {
+                                std::cout << "==========GET========" << std::endl;
                                 std::string cgi_str = cgi_differentiation(servers[index].getMemberRepository(), connects[curr_event->ident]);
                                 responses[curr_event->ident].setCgiStr(cgi_str);
                                 std::string body = makeBody(servers[index], connects[curr_event->ident].getPath(), servers[index].getLocations()[index], res);
                                 std::string send_message = buildResponse(body, servers[index].getLocations()[index], servers[index], res.getStatusCode());
                             }
                             else if (this->connects[curr_event->ident].getMethod() == "POST") {
+                                std::cout << "==========POST========" << std::endl;
                                 std::string cgi_str = cgi_differentiation(servers[index].getMemberRepository(), connects[curr_event->ident]);
                                 std::string str = connects[curr_event->ident].getHeaders() + "\r\n\r\n" + connects[curr_event->ident].getBody();
                                 char *buf = const_cast<char *>(str.c_str());
@@ -582,6 +588,7 @@ void    ServerManage::runServer(void) {
                                 responses[curr_event->ident].setCgiStr(cgi_str);
                             }
                             else if (this->connects[curr_event->ident].getMethod() == "DELETE") {
+                                std::cout << "==========DELETE========" << std::endl;
                                 executeMethodDelete(connects[curr_event->ident].getPath(), responses[curr_event->ident]);
                             }
                         }
