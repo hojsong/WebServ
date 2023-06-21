@@ -267,6 +267,8 @@ size_t  sendResponse(int client_fd, Server &server, std::string req_path, Respon
  void    executeMethodDelete(std::string req_path, Response res) {
     std::ifstream ifs(req_path.c_str());
 
+    std::cout << "path: " << req_path << std::endl;
+
     if (!ifs.good()) {
         res.setStatusCode(404);
         return ;
@@ -398,6 +400,25 @@ bool ServerManage::checkServerIndex(struct kevent *curr_event) {
     return false;
 }
 
+void    urlSearch(Request req, std::vector<Location> locations){
+    std::string str = "";
+    std::string file = "";
+    size_t      slen = 0;
+    size_t      i;
+    size_t      pos;
+
+    for (i = 0; i < locations.size(); i++) {
+        pos = req.getPath().find(locations[i].getPath());
+        if (pos != std::string::npos && locations[i].getPath().size() > slen){
+            str = locations[i].getPath();
+            slen = locations[i].getPath().size();
+            file = req.getPath().substr(pos + locations[i].getPath().size());
+        }
+    }
+    req.setPath(str);
+    req.setBody(file);
+}
+
 void    ServerManage::runServer(void) {
     int server_size = this->servers.size();
     
@@ -523,18 +544,23 @@ void    ServerManage::runServer(void) {
                                 break;
                             }
                         }
+                        if (this->connects[curr_event->ident].getMethod() == "DELETE"){
+                            urlSearch(this->connects[curr_event->ident], servers[index].getLocations());
+                        }
                         processRequest(this->connects[curr_event->ident]);
                         for (i = 0; i < servers[index].getLocations().size(); i++) {
                             if (connects[curr_event->ident].getPath() == servers[index].getLocations()[i].getPath())
                                 break;
                         }
-                        //std::cout << "Header: " << connects[curr_event->ident].getHeaders() << std::endl;
-                        //std::cout << "Body: " << connects[curr_event->ident].getBody() << std::endl;
-                        if (i == servers[index].getLocations().size())
+                        // std::cout << "Header: " << connects[curr_event->ident].getHeaders() << std::endl;
+                        // std::cout << "Body: " << connects[curr_event->ident].getBody() << std::endl;
+                        if (i == servers[index].getLocations().size()){
                            res.setStatusCode(404);
+                        }
                         else {
                            is_ok = servers[index].getLocations()[i].getMethods(); // is_ok의 경우 각 Method 권한을 가지고 있음. 0일 경우 접근 불가, 1일 경우 접근 가능
                         }
+                        std::cout << "isok : " << is_ok.size() << std::endl;
                         if (is_ok.size() > 0) { // 접근할 수 있는 Method가 있을 경우
                             // 각 메소드 및 권한을 파악하여 응답 생성
                             if (this->connects[curr_event->ident].getMethod() == "GET") {
