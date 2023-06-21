@@ -1,7 +1,7 @@
 NAME = webserv
 NAME2 = cgi.exe
 CXX = c++
-FLAG = -Wall -Werror -Wextra -std=c++98 -fsanitize=address
+FLAG = -Wall -Werror -Wextra -std=c++98
 RM = rm -rf
 SRCS = \
 	./srcs/main.cpp \

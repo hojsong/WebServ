@@ -5,7 +5,11 @@ ServerManage::ServerManage() {}
 ServerManage::~ServerManage() {}
 
 std::string makeAutoindex(Location loc, Server server) {
-    std::string rootpath = "./" + server.getRoot() + loc.getPath() + "/";
+    std::string rootpath;
+    if (loc.getPath() == "/")
+        rootpath = "./" + server.getRoot() + loc.getPath();
+    else
+        rootpath = "./" + server.getRoot() + loc.getPath() + "/";
     DIR*    dir;
     struct dirent*  dp;
     
@@ -38,6 +42,7 @@ std::string makeAutoindex(Location loc, Server server) {
 
 std::string readFilePath(std::string file_path, std::map<int, std::string> errors) {
     std::ifstream   file(file_path);
+
     if (file.is_open()) {
         std::ostringstream os;
         std::string line;
@@ -46,7 +51,6 @@ std::string readFilePath(std::string file_path, std::map<int, std::string> error
         file.close();
         return os.str();
     } else {
-        file.close();
         return errors.find(500)->second;
     }
 }
@@ -84,7 +88,11 @@ bool    isDirect(Server server, Location loc, std::string request_path) {
     dp = readdir(dir);
     while (dp != NULL) {
         std::string dir_name(dp->d_name);
-        std::string rootpath = "./" + server.getRoot() + loc.getPath() + "/";
+        std::string rootpath;
+        if (loc.getPath() == "/")
+            rootpath = "./" + server.getRoot() + loc.getPath();
+        else
+            rootpath = "./" + server.getRoot() + loc.getPath() + "/";
         if (request_path == rootpath + dir_name) {
             closedir(dir);
             return true;
@@ -97,12 +105,14 @@ bool    isDirect(Server server, Location loc, std::string request_path) {
 
 std::string makeBody(Server server, std::string request_path, Location loc, Response res) {
     std::map<int, std::string> errors = server.getErrorPages();
+
     if (res.getStatusCode() != 200)
         return errors.find(res.getStatusCode())->second;
 
     std::string body;
     if (isDirect(server, loc, "." + request_path) == true) {
         std::string file_path = "." + request_path;
+        std::cout << file_path << std::endl;
         body = readFilePath(file_path, errors);
         return body;
     } else if (loc.getAutoindex() == true) {
@@ -206,11 +216,11 @@ size_t  sendResponse(int client_fd, Server &server, std::string req_path, Respon
     bool    is_404 = true;
 
     if (res.getCgiStr().length() != 0){
-        std::cout << "1123" << std::endl;
         write(client_fd, res.getCgiStr().c_str(), res.getCgiStr().length());
         return WRITE_FINISH;
     }
     else {
+        std::cout << "Status Code: " << res.getStatusCode() << std::endl;
         if (res.getStatusCode() == 204) {
             response = "HTTP/1.1 204 No Content\r\n\r\n";
             write(client_fd, response.c_str(), response.size());
@@ -233,7 +243,7 @@ size_t  sendResponse(int client_fd, Server &server, std::string req_path, Respon
         for (i = 0; i < locs.size(); i++) {
             if (locs[i].getPath() == req_path) {
                 Location    target = locs[i];
-                if (target.getReturnValue().size() == 2) {
+                if (target.getReturnValue() != "") {
                     std::string return_path = target.getReturnValue();
 
                     // int head_number = atoi(buf[0].c_str());
@@ -246,13 +256,18 @@ size_t  sendResponse(int client_fd, Server &server, std::string req_path, Respon
                     // write(client_fd, response.c_str(), response.size());
 
                     sendResponse(client_fd, server, return_path, res);
-                    return WRITE_READY;
+                    return WRITE_FINISH;
                 }
                 body = makeBody(server, req_path, target, res);
                 response = buildResponse(body, target, server, res.getStatusCode());
                 is_404 = false;
                 break;
             }  else if (locs[i].getAutoindex() == true && isDirect(server, locs[i], "." + req_path) == true) {
+                body = makeBody(server, req_path, locs[i], res);
+                response = buildResponse(body, locs[i], server, res.getStatusCode());
+                is_404 = false;
+                break;
+            } else if (isDirect(server, locs[i], "." + req_path) == true) {
                 body = makeBody(server, req_path, locs[i], res);
                 response = buildResponse(body, locs[i], server, res.getStatusCode());
                 is_404 = false;
@@ -274,8 +289,6 @@ size_t  sendResponse(int client_fd, Server &server, std::string req_path, Respon
 
  void    executeMethodDelete(std::string req_path, Response& res) {
     std::ifstream ifs(req_path.c_str());
-
-    std::cout << "path: " << req_path << std::endl;
 
     if (!ifs.good()) {
         res.setStatusCode(404);
@@ -495,7 +508,6 @@ void    ServerManage::runServer(void) {
             }
             else { // false일 경우 클라이언트 소켓 값
                 if (curr_event->filter == EVFILT_READ) {
-                    std::cout << "Read Event: " << curr_event->ident << std::endl;
                 // 클라이언트 소켓일 경우 Reqeust를 읽어야 하기 때문에 아래 else if 문으로 접근(else문의 curr_event->ident는 모두 클라이언트 소켓임)
                     //char buffer[BUFFER_SIZE + 1];
                     //std::memset(buffer, 0, sizeof(buffer));
@@ -574,15 +586,13 @@ void    ServerManage::runServer(void) {
                         std::cout << "isok : " << is_ok.size() << std::endl;
                         if (is_ok.size() > 0) { // 접근할 수 있는 Method가 있을 경우
                             // 각 메소드 및 권한을 파악하여 응답 생성
-                            if (this->connects[curr_event->ident].getMethod() == "GET") {
-                                std::cout << "==========GET========" << std::endl;
+                            if (this->connects[curr_event->ident].getMethod() == "GET" && is_ok[0] > 0) {
                                 std::string cgi_str = cgi_differentiation(servers[index].getMemberRepository(), connects[curr_event->ident]);
                                 responses[curr_event->ident].setCgiStr(cgi_str);
                                 std::string body = makeBody(servers[index], connects[curr_event->ident].getPath(), servers[index].getLocations()[index], res);
                                 std::string send_message = buildResponse(body, servers[index].getLocations()[index], servers[index], res.getStatusCode());
                             }
-                            else if (this->connects[curr_event->ident].getMethod() == "POST") {
-                                std::cout << "==========POST========" << std::endl;
+                            else if (this->connects[curr_event->ident].getMethod() == "POST"&& is_ok[1] > 0) {
                                 std::string cgi_str = cgi_differentiation(servers[index].getMemberRepository(), connects[curr_event->ident]);
                                 std::string str = connects[curr_event->ident].getHeaders() + "\r\n\r\n" + connects[curr_event->ident].getBody();
                                 char *buf = const_cast<char *>(str.c_str());
@@ -594,16 +604,18 @@ void    ServerManage::runServer(void) {
                                 }
                                 responses[curr_event->ident].setCgiStr(cgi_str);
                             }
-                            else if (this->connects[curr_event->ident].getMethod() == "DELETE") {
-                                std::cout << "==========DELETE========" << std::endl;
+                            else if (this->connects[curr_event->ident].getMethod() == "DELETE"&& is_ok[2] > 0) {
                                 std::string path = "./" + servers[index].getRoot() + connects[curr_event->ident].getPath() + connects[curr_event->ident].getBody();
                                 executeMethodDelete(path, responses[curr_event->ident]);
                             }
                         }
-                         if (this->connects[curr_event->ident].getMethod() == "") {
-                            std::cout << "없는 method" << std::endl;
-                             // 없는 method error 처리
-                         }
+                        std::cout << connects[curr_event->ident].getMethod().size() << std::endl;
+                        if (this->connects[curr_event->ident].getMethod().size() == 0) {
+                            std::cout << "!!!!!\n";
+                            responses[curr_event->ident].setStatusCode(405);
+                            std::string body = makeBody(servers[index], connects[curr_event->ident].getPath(), servers[index].getLocations()[index], res);
+                            std::string send_message = buildResponse(body, servers[index].getLocations()[index], servers[index], res.getStatusCode());
+                        }
                         // 응답 생성까지 끝났으므로
                         change_events(curr_event->ident, EVFILT_READ, EV_DISABLE); // 클라이언트 READ 이벤트 비활성화
                         change_events(curr_event->ident, EVFILT_WRITE, EV_ENABLE); // 클라이언트 소켓 WRITE 이벤트 활성화

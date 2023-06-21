@@ -92,7 +92,6 @@ std::string cgi_differentiation(MemberRepository *mr, Request req){
     else if (method == 2 && url == "/upload/file")
         result = hj_cgi_execve(buf, mr);
     else if (method == 2) {
-        std::cout << "!!!!!!!!!!!!!" << std::endl;
         result = handle_cgi("cgi-bin/image_cgi.py", req);
     }
     return (result);

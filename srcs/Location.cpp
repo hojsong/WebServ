@@ -63,8 +63,8 @@ void	Location::setMethods(std::vector<std::string> param) {
     buffer.resize(5);
     buffer[0] = 1;
     buffer[1] = 0;
-    buffer[2] = 1;
-    buffer[3] = 1;
+    buffer[2] = 0;
+    buffer[3] = 0;
     buffer[4] = 0;
 
     for (size_t i = 0; i < param.size(); i++) {
@@ -88,6 +88,11 @@ void	Location::setMethods(std::vector<std::string> param) {
 }
 
 void	Location::setReturnValue(std::string param) {
+    if (return_value != "")
+        throw ErrorException("location return_value duplicated");
+    size_t pos = param.find(';');
+    if (pos != std::string::npos)
+        param = param.substr(0, pos);
     return_value = param;
 }
 

@@ -156,8 +156,9 @@ void	ParseConfig::createServer(std::string& config, Server& serv) {
 					loc.setRoot(arg[++i]);
 				else if (arg[i] == "index")
 					loc.setIndex(arg[++i]);
-				else if (arg[i] == "return")
+				else if (arg[i] == "return") {
 					loc.setReturnValue(arg[++i]);
+				}
 				else if (arg[i] == "alias")
 					loc.setAlias(arg[++i]);
 				else if (arg[i] == "autoindex")
