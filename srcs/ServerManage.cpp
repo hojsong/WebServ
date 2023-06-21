@@ -583,7 +583,7 @@ void    ServerManage::runServer(void) {
                         else {
                            is_ok = servers[index].getLocations()[i].getMethods(); // is_ok의 경우 각 Method 권한을 가지고 있음. 0일 경우 접근 불가, 1일 경우 접근 가능
                         }
-                        std::cout << "isok : " << is_ok.size() << std::endl;
+                        // std::cout << "isok : " << is_ok.size() << std::endl;
                         if (is_ok.size() > 0) { // 접근할 수 있는 Method가 있을 경우
                             // 각 메소드 및 권한을 파악하여 응답 생성
                             if (this->connects[curr_event->ident].getMethod() == "GET" && is_ok[0] > 0) {
@@ -597,7 +597,7 @@ void    ServerManage::runServer(void) {
                                 std::string str = connects[curr_event->ident].getHeaders() + "\r\n\r\n" + connects[curr_event->ident].getBody();
                                 char *buf = const_cast<char *>(str.c_str());
                                 if (GetComplete(buf, servers[index].getMemberRepository())){
-                                   if (is_ok[3] > 0 && std::strstr(buf, "_method=delete"))
+                                   if (is_ok[2] > 0 && std::strstr(buf, "_method=delete"))
                                        delete_member_true(buf, servers[index].getMemberRepository());
                                    else 
                                        save_true(buf, servers[index].getMemberRepository());
