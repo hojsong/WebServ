@@ -7,6 +7,7 @@ Response::Response(void) {
     content_length = 0;
     connection = "";
     cgi_str = "";
+    return_value = "";
 }
 
 Response::~Response(void) {}
@@ -35,6 +36,10 @@ void    Response::setCgiStr(std::string cgi_str){
     this->cgi_str = cgi_str;
 }
 
+void    Response::setReturnValue(std::string param) {
+    this->return_value = param;
+}
+
 std::string Response::getVersion(void) {
     return version;
 }
@@ -56,7 +61,11 @@ int         Response::getContentLength(void) {
 }
 
 std::string Response::getCgiStr(void){
-    return this->cgi_str;
+    return cgi_str;
+}
+
+std::string Response::getReturnValue(void) {
+    return return_value;
 }
 
 std::string Response::makeHeader(void) {
@@ -70,4 +79,5 @@ void    Response::clearAll(void) {
     content_length = 0;
     connection = "";
     cgi_str = "";
+    return_value = "";
 }

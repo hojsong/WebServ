@@ -27,6 +27,7 @@ class   Response {
         int         content_length;
         std::string connection;
         std::string cgi_str;
+        std::string return_value;
     public:
         Response(void);
         ~Response();
@@ -38,6 +39,7 @@ class   Response {
         void    setStatusCode(int param);
         void    setContentLength(int param);
         void    setCgiStr(std::string cgi_str);
+        void    setReturnValue(std::string param);
 
         //getter
         std::string getVersion(void);
@@ -46,6 +48,7 @@ class   Response {
         int         getStatusCode(void);
         int         getContentLength(void);
         std::string getCgiStr(void);
+        std::string getReturnValue(void);
 
         std::string     makeHeader(void);
         void            clearAll(void);

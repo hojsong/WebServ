@@ -209,7 +209,7 @@ void    processRequest(Request& req) {
 //     return req;
 // }
 
-size_t  sendResponse(int client_fd, Server &server, std::string req_path, Response res) {
+size_t  sendResponse(int client_fd, Server &server, std::string req_path, Response& res) {
     std::vector<Location>  locs = server.getLocations();
     std::string body;
     std::string response;
@@ -220,7 +220,6 @@ size_t  sendResponse(int client_fd, Server &server, std::string req_path, Respon
         return WRITE_FINISH;
     }
     else {
-        std::cout << "Status Code: " << res.getStatusCode() << std::endl;
         if (res.getStatusCode() == 204) {
             response = "HTTP/1.1 204 No Content\r\n\r\n";
             write(client_fd, response.c_str(), response.size());
@@ -229,6 +228,12 @@ size_t  sendResponse(int client_fd, Server &server, std::string req_path, Respon
         else if (res.getStatusCode() == 403) {
             response = "HTTP/1.1 403 Forbidden\r\nContent-Length: 19\r\nContent-Type: text/plain; charset=utf-8\r\n\r\nAccess denied: 403\r\n";
             write(client_fd, response.c_str(), response.size());
+            return WRITE_FINISH;
+        }
+        else if (res.getStatusCode() == 307) {
+            response = "HTTP/1.1 307 Temporary Redirect\r\nLocation: " + res.getReturnValue() + "\r\n";
+            res.setStatusCode(200);
+            sendResponse(client_fd, server, res.getReturnValue(), res);
             return WRITE_FINISH;
         }
         else if (res.getStatusCode() > 400) { // 원래는 200
@@ -243,21 +248,6 @@ size_t  sendResponse(int client_fd, Server &server, std::string req_path, Respon
         for (i = 0; i < locs.size(); i++) {
             if (locs[i].getPath() == req_path) {
                 Location    target = locs[i];
-                if (target.getReturnValue() != "") {
-                    std::string return_path = target.getReturnValue();
-
-                    // int head_number = atoi(buf[0].c_str());
-                    // std::string return_path = buf[1];
-                    // response = buildResponse(body, target, server, head_number);
-                    // std::cout << response << std::endl;
-                    // std::cout << return_path << std::endl;
-                    // 303 처리에 대한 문제점 : 한 fd당 한번의 send만 가능하나
-                    // 303 send 후 다시 리다이렉션시 소켓이 끊김
-                    // write(client_fd, response.c_str(), response.size());
-
-                    sendResponse(client_fd, server, return_path, res);
-                    return WRITE_FINISH;
-                }
                 body = makeBody(server, req_path, target, res);
                 response = buildResponse(body, target, server, res.getStatusCode());
                 is_404 = false;
@@ -443,6 +433,23 @@ void    urlSearch(Request &req, std::vector<Location> locations){
     req.setBody(file);
 }
 
+std::string checkReturnValue(Server& server, std::string req_path) {
+    std::string result = "";
+    size_t  i;
+    std::vector<Location> locs = server.getLocations();
+
+    for (i = 0; i < locs.size(); i++) {
+        if (locs[i].getPath() == req_path) {
+            Location    target = locs[i];
+            if (target.getReturnValue() != "") {
+                result = target.getReturnValue();
+                return result;
+            }
+        }
+    }
+    return result;
+}
+
 void    ServerManage::runServer(void) {
     int server_size = this->servers.size();
     
@@ -557,6 +564,7 @@ void    ServerManage::runServer(void) {
                     if (connects[curr_event->ident].getState() == READ_FINISH) { // 데이터를 모두 읽었을 경우 본문 응답 생성
                         uintptr_t   serv_fd;
                         Response    res;
+                        std::string return_value;
                         std::vector<int> is_ok;
                         size_t  i;
                         size_t  index;
@@ -568,6 +576,11 @@ void    ServerManage::runServer(void) {
                             }
                         }
                         processRequest(this->connects[curr_event->ident]);
+                        return_value = checkReturnValue(servers[index], connects[curr_event->ident].getPath());
+                        if (return_value != "") {
+                            responses[curr_event->ident].setReturnValue(return_value);
+                            responses[curr_event->ident].setStatusCode(307);
+                        }
                         if (this->connects[curr_event->ident].getMethod() == "DELETE"){
                             urlSearch(this->connects[curr_event->ident], servers[index].getLocations());
                         }
@@ -575,15 +588,12 @@ void    ServerManage::runServer(void) {
                             if (connects[curr_event->ident].getPath() == servers[index].getLocations()[i].getPath())
                                 break;
                         }
-                        // std::cout << "Header: " << connects[curr_event->ident].getHeaders() << std::endl;
-                        // std::cout << "Body: " << connects[curr_event->ident].getBody() << std::endl;
                         if (i == servers[index].getLocations().size()){
                            res.setStatusCode(404);
                         }
                         else {
                            is_ok = servers[index].getLocations()[i].getMethods(); // is_ok의 경우 각 Method 권한을 가지고 있음. 0일 경우 접근 불가, 1일 경우 접근 가능
                         }
-                        // std::cout << "isok : " << is_ok.size() << std::endl;
                         if (is_ok.size() > 0) { // 접근할 수 있는 Method가 있을 경우
                             // 각 메소드 및 권한을 파악하여 응답 생성
                             if (this->connects[curr_event->ident].getMethod() == "GET" && is_ok[0] > 0) {
@@ -609,9 +619,7 @@ void    ServerManage::runServer(void) {
                                 executeMethodDelete(path, responses[curr_event->ident]);
                             }
                         }
-                        std::cout << connects[curr_event->ident].getMethod().size() << std::endl;
                         if (this->connects[curr_event->ident].getMethod().size() == 0) {
-                            std::cout << "!!!!!\n";
                             responses[curr_event->ident].setStatusCode(405);
                             std::string body = makeBody(servers[index], connects[curr_event->ident].getPath(), servers[index].getLocations()[index], res);
                             std::string send_message = buildResponse(body, servers[index].getLocations()[index], servers[index], res.getStatusCode());
