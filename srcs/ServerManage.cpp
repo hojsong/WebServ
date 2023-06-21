@@ -206,14 +206,22 @@ size_t  sendResponse(int client_fd, Server &server, std::string req_path, Respon
     bool    is_404 = true;
 
     if (res.getCgiStr().length() != 0){
-        size_t len = write(client_fd, res.getCgiStr().c_str(), res.getCgiStr().length());
-        std::cout << "len: " << len << std::endl;
-        if (len == res.getCgiStr().length()) {
-            return WRITE_FINISH;
-        }
+        std::cout << "1123" << std::endl;
+        write(client_fd, res.getCgiStr().c_str(), res.getCgiStr().length());
+        return WRITE_FINISH;
     }
     else {
-        if (res.getStatusCode() > 400) { // 원래는 200
+        if (res.getStatusCode() == 204) {
+            response = "HTTP/1.1 204 No Content\r\n\r\n";
+            write(client_fd, response.c_str(), response.size());
+            return WRITE_FINISH;
+        }
+        else if (res.getStatusCode() == 403) {
+            response = "HTTP/1.1 403 Forbidden\r\nContent-Length: 19\r\nContent-Type: text/plain; charset=utf-8\r\n\r\nAccess denied: 403\r\n";
+            write(client_fd, response.c_str(), response.size());
+            return WRITE_FINISH;
+        }
+        else if (res.getStatusCode() > 400) { // 원래는 200
             body = makeBody(server, req_path, locs[0], res);
             response = buildResponse(body, locs[0], server, res.getStatusCode());
             size_t len = write(client_fd, response.c_str(), response.size());
@@ -264,7 +272,7 @@ size_t  sendResponse(int client_fd, Server &server, std::string req_path, Respon
     return WRITE_READY;
 }
 
- void    executeMethodDelete(std::string req_path, Response res) {
+ void    executeMethodDelete(std::string req_path, Response& res) {
     std::ifstream ifs(req_path.c_str());
 
     std::cout << "path: " << req_path << std::endl;
@@ -274,7 +282,7 @@ size_t  sendResponse(int client_fd, Server &server, std::string req_path, Respon
         return ;
     }
     ifs.close();
-    if (unlink(req_path.c_str()) == 0) {
+    if (unlink(req_path.c_str()) != 0) {
         res.setStatusCode(403);
     }
     else
@@ -550,7 +558,6 @@ void    ServerManage::runServer(void) {
                         processRequest(this->connects[curr_event->ident]);
                         if (this->connects[curr_event->ident].getMethod() == "DELETE"){
                             urlSearch(this->connects[curr_event->ident], servers[index].getLocations());
-                            std::cout << "path:" <<connects[curr_event->ident].getPath() << std::endl;
                         }
                         for (i = 0; i < servers[index].getLocations().size(); i++) {
                             if (connects[curr_event->ident].getPath() == servers[index].getLocations()[i].getPath())
@@ -589,7 +596,8 @@ void    ServerManage::runServer(void) {
                             }
                             else if (this->connects[curr_event->ident].getMethod() == "DELETE") {
                                 std::cout << "==========DELETE========" << std::endl;
-                                executeMethodDelete(connects[curr_event->ident].getPath(), responses[curr_event->ident]);
+                                std::string path = "./" + servers[index].getRoot() + connects[curr_event->ident].getPath() + connects[curr_event->ident].getBody();
+                                executeMethodDelete(path, responses[curr_event->ident]);
                             }
                         }
                          if (this->connects[curr_event->ident].getMethod() == "") {
