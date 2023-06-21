@@ -52,7 +52,7 @@ void POST_FILE(char *buf, MemberRepository *mr){
 			savebody = result;
 			result.clear();
     	}
-		std::ofstream savefile("./file/" + filename);
+		std::ofstream savefile("./html/file/" + filename);
 		std::cerr << "filename: " << filename << std::endl;
 		savefile << savebody;
 		std::cerr << "savebody: " << savebody << std::endl;

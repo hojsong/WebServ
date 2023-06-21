@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>파일 업로드 예시</title>
+    <title>파일 업로드</title>
 </head>
 <body>
     <h1>파일 업로드</h1>
     <form action="/upload/file" method="POST" enctype="multipart/form-data">
-        <input type="file" name="fileToUpload" id="fileToUpload">
+        <input type="file" name="fileToUpload" id="fileToUpload" accept="text/plain, .hpp, .html">
         <input type="submit" value="업로드">
     </form>
 </body>

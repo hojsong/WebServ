@@ -36,7 +36,7 @@ OBJS = $(SRCS:.cpp=.o)
 OBCS = $(CGIS:.cpp=.o)
 
 all : $(NAME) $(NAME2)
-	@mkdir file
+	@mkdir html/file
 
 %.o : %.cpp
 	@$(CXX) $(FLAG) -I $(INCS) -c $< -o $@
@@ -55,7 +55,7 @@ fclean : clean
 	@$(RM) $(NAME)
 	@$(RM) $(NAME2)
 	@rm -rf memberdb.txt
-	@rm -rf file
+	@rm -rf html/file
 
 re : fclean all
 
