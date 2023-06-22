@@ -1,20 +1,76 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f2f2f2;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        form {
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #ffffff;
+            border: 1px solid #cccccc;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 10px;
+        }
+        
+        input[type="text"],
+        input[type="password"] {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #cccccc;
+            border-radius: 3px;
+            box-sizing: border-box;
+        }
+        
+        button[type="submit"] {
+            background-color: #337ab7;
+            color: #ffffff;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        
+        p {
+            margin-top: 10px;
+            color: #666666;
+            font-size: 14px;
+        }
+    </style>
+</head>
 <body>
-<div class="container">
-  <form action="/members/logins" method="post">
-    <div class="form-group">
-      <label for="id">ID : </label>
-      <input type="text" id="login_id" name="login_id" placeholder="ID를 입력해 주세요">
-      <p/>
-      <label for="password">Password : </label>
-      <input type="password" id="login_password" name="login_password" placeholder="비밀번호를 입력하세요">
-      <p/>
+    <div class="container">
+        <form action="/members/logins" method="post">
+            <div class="form-group">
+                <label for="login_id">ID:</label>
+                <input type="text" id="login_id" name="login_id" placeholder="ID를 입력해 주세요">
+                <label for="login_password">Password:</label>
+                <input type="password" id="login_password" name="login_password" placeholder="비밀번호를 입력하세요">
+            </div>
+            <button type="submit" name="login">로그인</button>
+            <script>
+                document.cookie = "login_ided=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
+            </script>
+        </form>
     </div>
-    <button type="submit" name="login" >로그인</button>
-  <script>
-    document.cookie = "login_ided=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
-  </script>
-  </form>
-</div> <!-- /container -->
 </body>
 </html>
