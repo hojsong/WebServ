@@ -24,6 +24,7 @@ int			getButton(char *buf);
 bool		execveID_CHK(char *buf, MemberRepository *mr);
 bool		execveSAVE(char *buf, MemberRepository *mr);
 bool		execveLogin(char *buf, MemberRepository *mr);
+bool		execveWithdrawal(char *buf, MemberRepository *mr);
 void 		URl_execve(char *buf, std::string &str, MemberRepository *mr, Member me);
 bool		readFile(const std::string& filename, MemberRepository *mr);
 void		readMR(MemberRepository *mr);
@@ -45,5 +46,6 @@ std::string get_header(int status, std::string &content);
 void		exe_Complete_page(char *buf, int button, MemberRepository *mr);
 bool	 	GetComplete(char *buf,MemberRepository *mr);
 void		logined_home(char *buf, MemberRepository *mr);
+void		cookie_del(std::string url, char *buf, MemberRepository *mr);
 
 #endif

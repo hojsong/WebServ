@@ -223,14 +223,14 @@ std::string getFile(char *buf, MemberRepository *mr){
 		return "";
 	if (url == "/members/new" && button == 1)
 		filename = "./html/members/new/createMemberForm.html";
-	else if (url == "/members/new")
-		filename = "./html/members/new/home.html";
+	// else if (url == "/members/new")
+	// 	filename = "./html/members/new/home.html";
 	else if (url == "/members")
 		filename = "./html/members/memberList.html";	
-	else if (url == "/members/logins")
-		filename = "./html/members/logins/home.html";
-	else
-		return "";
+	// else if (url == "/members/logins")
+	// 	filename = "./html/members/logins/home.html";
+	// else
+	// 	return "";
 	std::string result;
 	std::ifstream file(filename);
 	result = getHtml(file);

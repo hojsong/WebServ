@@ -16,7 +16,9 @@ int main(int argc, char **argv){
 		exe_Error_page(argv[1], button, &mr);
 	if (GetComplete(argv[1], &mr) == true)
 		exe_Complete_page(argv[1], button, &mr);
-	if (url == "/home" && get_cookie(argv[1], &mr).getById().length() != 0)
+	if (button == 0 && (url == "/members/logins" || url == "/members/new"))
+		cookie_del(url, argv[1], &mr);
+	else if (url == "/home" && get_cookie(argv[1], &mr).getById().length() != 0)
 		logined_home(argv[1], &mr);
 	else if (url == "/members/new")
 		member_id_chk(argv[1], &mr);

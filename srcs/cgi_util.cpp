@@ -83,13 +83,13 @@ std::string cgi_differentiation(MemberRepository *mr, Request req){
         result = hj_cgi_execve(buf, mr);
     else if (method == 1 && url == "/home")
         result = hj_cgi_execve(buf, mr);
-    else if (method == 2 && url == "/members/new")
+    else if (url == "/members/new")
         result = hj_cgi_execve(buf, mr);
-    else if ((method == 2 || method == 3 ) && url == "/members/del")
+    else if (url == "/members/del")
         result = hj_cgi_execve(buf, mr);
-    else if (method == 2 && url == "/members/logins") 
+    else if (url == "/members/logins") 
         result = hj_cgi_execve(buf, mr);
-    else if (method == 2 && url == "/upload/file")
+    else if (url == "/upload/file")
         result = hj_cgi_execve(buf, mr);
     else if (method == 2) {
         result = handle_cgi("cgi-bin/image_cgi.py", req);

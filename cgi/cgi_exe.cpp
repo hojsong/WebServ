@@ -99,3 +99,18 @@ void	logined_home(char *buf, MemberRepository *mr){
 	}
 	std::cout << str << std::endl;
 }
+
+void	cookie_del(std::string url, char *buf, MemberRepository *mr){
+	std::string filename = "";
+	std::string str;
+	if(url == "/members/logins")
+		filename = "./html/members/logins/loginMemberForm.html";
+	else if (url == "/members/new")
+		filename = "./html/members/new/createMemberForm.html";
+	if (filename.length() == 0)
+		return ;
+	std::ifstream file(filename);
+	str = getHtml(file);
+	head_plus(str, 200, buf, mr);
+	std::cout << str << std::endl;
+}
