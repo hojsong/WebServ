@@ -450,182 +450,191 @@ void    ServerManage::runServer(void) {
         change_events(this->servers[i].getServerSocket(), EVFILT_READ, EV_ADD | EV_ENABLE);
     }
     std::cout << "Server Start!" << std::endl;
+
+    struct timespec time_out;
+    time_out.tv_nsec = 1000;
+    time_out.tv_sec = 0;
     //main loop
     while(true) {
-        int event_count = kevent(kq, &changeList[0], changeList.size(), eventList, 1024, 0);
+        try {
+            int event_count = kevent(kq, &changeList[0], changeList.size(), eventList, 1024, &time_out);
 
-        changeList.clear();
-        if (event_count == -1) {
-            // fd 모두 닫기
-            throw ErrorException("kevent error");
-        }
-        for (int i = 0; i < event_count; ++i) { // 이벤트 개수만큼 루프 순회
-            curr_event = &eventList[i];
-            if (curr_event->flags & EV_ERROR) { // 에러 발생 시
-                continue;
+            changeList.clear();
+            if (event_count == -1) {
+                // fd 모두 닫기
+                throw ErrorException("kevent error");
             }
-            if (checkServerIndex(curr_event)) { // 서버 소켓일 경우, 서버 인덱스 값
-                size_t      index;
-
-                for (index = 0; index < servers.size(); ++index) {
-                    if (curr_event->ident == servers[index].getServerSocket()) {
-                        break;
-                    }
-                }
-                int clnt_fd = accept(servers[index].getServerSocket(), NULL, NULL);
-                if (clnt_fd == -1) {
-                    // 에러 처리
+            for (int i = 0; i < event_count; ++i) { // 이벤트 개수만큼 루프 순회
+                curr_event = &eventList[i];
+                if (curr_event->flags & EV_ERROR) { // 에러 발생 시
                     continue;
                 }
-                if (fcntl(clnt_fd, F_SETFL, O_NONBLOCK) == -1) {
-                    // 에러 처리
+                if (checkServerIndex(curr_event)) { // 서버 소켓일 경우, 서버 인덱스 값
+                    size_t      index;
+
+                    for (index = 0; index < servers.size(); ++index) {
+                        if (curr_event->ident == servers[index].getServerSocket()) {
+                            break;
+                        }
+                    }
+                    int clnt_fd = accept(servers[index].getServerSocket(), NULL, NULL);
+                    if (clnt_fd == -1) {
+                        // 에러 처리
+                        continue;
+                    }
+                    if (fcntl(clnt_fd, F_SETFL, O_NONBLOCK) == -1) {
+                        // 에러 처리
+                    }
+                    // 클라이언트 소켓 이벤트 등록(READ와 WRITE 모두 등록하지만 READ부터 해야하기때문에 ENABLE, DISABLE로 구분)
+                    change_events(clnt_fd, EVFILT_READ, EV_ADD | EV_ENABLE);
+                    change_events(clnt_fd, EVFILT_WRITE, EV_ADD | EV_DISABLE);
+                    // 클라이언트 : 서버소켓 으로 다수 클라이언트 관리
+                    clients[clnt_fd] = servers[index].getServerSocket(); // 추후 클라이언트 이벤트 발생 시, curr_event->ident로 접근 가능
+                    // Connection 객체 생성 -> 응답 시간 체크 및 request 정보 포함
+                    Request req;
+                    connects[clnt_fd] = req;
+                    // 새로운 client 생성
+                    std::cout << "Accept new client: " << clnt_fd << std::endl;
                 }
-                // 클라이언트 소켓 이벤트 등록(READ와 WRITE 모두 등록하지만 READ부터 해야하기때문에 ENABLE, DISABLE로 구분)
-                change_events(clnt_fd, EVFILT_READ, EV_ADD | EV_ENABLE);
-                change_events(clnt_fd, EVFILT_WRITE, EV_ADD | EV_DISABLE);
-                // 클라이언트 : 서버소켓 으로 다수 클라이언트 관리
-                clients[clnt_fd] = servers[index].getServerSocket(); // 추후 클라이언트 이벤트 발생 시, curr_event->ident로 접근 가능
-                // Connection 객체 생성 -> 응답 시간 체크 및 request 정보 포함
-                Request req;
-                connects[clnt_fd] = req;
-                // 새로운 client 생성
-                std::cout << "Accept new client: " << clnt_fd << std::endl;
-            }
-            else { // false일 경우 클라이언트 소켓 값
-                if (curr_event->filter == EVFILT_READ) {
-                // 클라이언트 소켓일 경우 Reqeust를 읽어야 하기 때문에 아래 else if 문으로 접근(else문의 curr_event->ident는 모두 클라이언트 소켓임)
-                    std::vector<char> buffer(BUFFER_SIZE);
-                    ssize_t len = readData(curr_event->ident, buffer.data(), BUFFER_SIZE);
-                    // len > 0 : 읽을 데이터 있음, len == -1 : 아직 데이터 수신을 완료하지 못했을 수 있으므로 다시 접근, len == 0 : 클라이언트와의 접근이 끊김(close)
-                    if (len > 0) {
-                        buffer.resize(len);
-                        if (connects[curr_event->ident].getState() == HEADER_READ) { // State 초기 설정값은 HEADER_READ임
-                            std::string temp_data(buffer.begin(), buffer.end());
-                            size_t pos = temp_data.find("\r\n\r\n"); // 헤더와 본문을 구문하는 구분자는 \r\n\r\n
-                            if (pos == std::string::npos) { // pos가 npos라는 뜻은 본문이 존재하지 않는 요청
-                                connects[curr_event->ident].appendHeader(temp_data);
+                else { // false일 경우 클라이언트 소켓 값
+                    if (curr_event->filter == EVFILT_READ) {
+                    // 클라이언트 소켓일 경우 Reqeust를 읽어야 하기 때문에 아래 else if 문으로 접근(else문의 curr_event->ident는 모두 클라이언트 소켓임)
+                        std::vector<char> buffer(BUFFER_SIZE);
+                        ssize_t len = readData(curr_event->ident, buffer.data(), BUFFER_SIZE);
+                        // len > 0 : 읽을 데이터 있음, len == -1 : 아직 데이터 수신을 완료하지 못했을 수 있으므로 다시 접근, len == 0 : 클라이언트와의 접근이 끊김(close)
+                        if (len > 0) {
+                            buffer.resize(len);
+                            if (connects[curr_event->ident].getState() == HEADER_READ) { // State 초기 설정값은 HEADER_READ임
+                                std::string temp_data(buffer.begin(), buffer.end());
+                                size_t pos = temp_data.find("\r\n\r\n"); // 헤더와 본문을 구문하는 구분자는 \r\n\r\n
+                                if (pos == std::string::npos) { // pos가 npos라는 뜻은 본문이 존재하지 않는 요청
+                                    connects[curr_event->ident].appendHeader(temp_data);
+                                }
+                                else { // 본문을 읽는데
+                                    connects[curr_event->ident].appendHeader(temp_data.substr(0, pos)); // 헤더만 저장
+                                    size_t body_size = checkContenLength(this->connects[curr_event->ident].getHeaders()); // Content-Length 헤더의 값 추출
+                                    std::string temp_body = temp_data.substr(pos + 4); // 본문 내용 저장(없을 경우 "")
+                                    connects[curr_event->ident].appendBody(temp_body);
+                                    if (body_size == temp_body.size()) { // 본문을 다 읽었을 경우
+                                        connects[curr_event->ident].setState(READ_FINISH);
+                                    }
+                                    else { // 본문을 다 읽지 못했을 경우
+                                        connects[curr_event->ident].setState(BODY_READ);
+                                    }
+                                }
                             }
-                            else { // 본문을 읽는데
-                                connects[curr_event->ident].appendHeader(temp_data.substr(0, pos)); // 헤더만 저장
-                                size_t body_size = checkContenLength(this->connects[curr_event->ident].getHeaders()); // Content-Length 헤더의 값 추출
-                                std::string temp_body = temp_data.substr(pos + 4); // 본문 내용 저장(없을 경우 "")
+                            else if (connects[curr_event->ident].getState() == BODY_READ) {
+                                size_t body_size = checkContenLength(this->connects[curr_event->ident].getHeaders());
+                                std::string temp_body(buffer.begin(), buffer.end());
                                 connects[curr_event->ident].appendBody(temp_body);
-                                if (body_size == temp_body.size()) { // 본문을 다 읽었을 경우
+                                if (body_size == connects[curr_event->ident].getBody().size()) {
                                     connects[curr_event->ident].setState(READ_FINISH);
                                 }
-                                else { // 본문을 다 읽지 못했을 경우
-                                    connects[curr_event->ident].setState(BODY_READ);
+                            }
+                        }
+                        else if (len == 0) { // 클라이언트와의 연결 종료(읽을 데이터가 없을 경우 클라이언트에게서는 0이 아닌 -1 값을 받아옴. 연결이 끊겼을 때(close)만 0 출력됨
+                            std::cout << "Client " << curr_event->ident << " disconnected." << std::endl;
+                            // std::string disc = "Set-Cookie: expires=Thu, 01-Jan-1970 00:00:01; GMT path=/";
+                            // if (write(curr_event->ident, disc.c_str(), disc.length()) == -1)
+                                // std::cout << "Cookie reset Fail; "<< std::endl;
+                            close(curr_event->ident);
+                        }
+                        else {
+                            continue ; // 추후 다시 접근
+                        }
+                        if (connects[curr_event->ident].getState() == READ_FINISH) { // 데이터를 모두 읽었을 경우 본문 응답 생성
+                            uintptr_t   serv_fd;
+                            Response    res;
+                            std::string return_value;
+                            std::vector<int> is_ok;
+                            size_t  i;
+                            size_t  index;
+
+                            serv_fd = clients[curr_event->ident]; // 서버 객체에 접근할 서버 소켓값 추출
+                            for (index = 0; index < servers.size(); ++index) {
+                                if (serv_fd == servers[index].getServerSocket()) {
+                                    break;
                                 }
                             }
-                        }
-                        else if (connects[curr_event->ident].getState() == BODY_READ) {
-                            size_t body_size = checkContenLength(this->connects[curr_event->ident].getHeaders());
-                            std::string temp_body(buffer.begin(), buffer.end());
-                            connects[curr_event->ident].appendBody(temp_body);
-                            if (body_size == connects[curr_event->ident].getBody().size()) {
-                                connects[curr_event->ident].setState(READ_FINISH);
+                            processRequest(this->connects[curr_event->ident]);
+                            return_value = checkReturnValue(servers[index], connects[curr_event->ident].getPath());
+                            if (return_value != "") {
+                                responses[curr_event->ident].setReturnValue(return_value);
+                                responses[curr_event->ident].setStatusCode(307);
                             }
-                        }
+                            if (this->connects[curr_event->ident].getMethod() == "DELETE"){
+                                urlSearch(this->connects[curr_event->ident], servers[index].getLocations());
+                            }
+                            for (i = 0; i < servers[index].getLocations().size(); i++) {
+                                if (connects[curr_event->ident].getPath() == servers[index].getLocations()[i].getPath())
+                                    break;
+                            }
+                            if (i == servers[index].getLocations().size()){
+                            res.setStatusCode(404);
+                            }
+                            else {
+                            is_ok = servers[index].getLocations()[i].getMethods(); // is_ok의 경우 각 Method 권한을 가지고 있음. 0일 경우 접근 불가, 1일 경우 접근 가능
+                            }
+                            if (is_ok.size() > 0) { // 접근할 수 있는 Method가 있을 경우
+                                // 각 메소드 및 권한을 파악하여 응답 생성
+                                if (this->connects[curr_event->ident].getMethod() == "GET" && is_ok[0] > 0) {
+                                    std::string cgi_str = cgi_differentiation(servers[index].getMemberRepository(), connects[curr_event->ident]);
+                                    responses[curr_event->ident].setCgiStr(cgi_str);
+                                    std::string body = makeBody(servers[index], connects[curr_event->ident].getPath(), servers[index].getLocations()[index], res);
+                                    std::string send_message = buildResponse(body, servers[index].getLocations()[index], servers[index], res.getStatusCode());
+                                }
+                                else if (this->connects[curr_event->ident].getMethod() == "POST"&& is_ok[1] > 0) {
+                                    std::string cgi_str = cgi_differentiation(servers[index].getMemberRepository(), connects[curr_event->ident]);
+                                    std::string str = connects[curr_event->ident].getHeaders() + "\r\n\r\n" + connects[curr_event->ident].getBody();
+                                    char *buf = const_cast<char *>(str.c_str());
+                                    if (GetComplete(buf, servers[index].getMemberRepository())){
+                                    if (std::strstr(buf, "_method=delete") && is_ok[2] > 0)
+                                        delete_member_true(buf, servers[index].getMemberRepository());
+                                    else 
+                                        save_true(buf, servers[index].getMemberRepository());
+                                    }
+                                    responses[curr_event->ident].setCgiStr(cgi_str);
+                                }
+                                else if (this->connects[curr_event->ident].getMethod() == "DELETE"&& is_ok[2] > 0) {
+                                    std::string path = "./" + servers[index].getRoot() + connects[curr_event->ident].getPath() + connects[curr_event->ident].getBody();
+                                    executeMethodDelete(path, responses[curr_event->ident]);
+                                }
+                            }
+                            if (this->connects[curr_event->ident].getMethod().size() == 0) {
+                                responses[curr_event->ident].setStatusCode(405);
+                                std::string body = makeBody(servers[index], connects[curr_event->ident].getPath(), servers[index].getLocations()[index], res);
+                                std::string send_message = buildResponse(body, servers[index].getLocations()[index], servers[index], res.getStatusCode());
+                            }
+                            // 응답 생성까지 끝났으므로
+                            change_events(curr_event->ident, EVFILT_READ, EV_DISABLE); // 클라이언트 READ 이벤트 비활성화
+                            change_events(curr_event->ident, EVFILT_WRITE, EV_ENABLE); // 클라이언트 소켓 WRITE 이벤트 활성화
+                        }  
                     }
-                    else if (len == 0) { // 클라이언트와의 연결 종료(읽을 데이터가 없을 경우 클라이언트에게서는 0이 아닌 -1 값을 받아옴. 연결이 끊겼을 때(close)만 0 출력됨
-                        std::cout << "Client " << curr_event->ident << " disconnected." << std::endl;
-                        // std::string disc = "Set-Cookie: expires=Thu, 01-Jan-1970 00:00:01; GMT path=/";
-                        // if (write(curr_event->ident, disc.c_str(), disc.length()) == -1)
-                            // std::cout << "Cookie reset Fail; "<< std::endl;
-                        close(curr_event->ident);
-                    }
-                    else {
-                        continue ; // 추후 다시 접근
-                    }
-                    if (connects[curr_event->ident].getState() == READ_FINISH) { // 데이터를 모두 읽었을 경우 본문 응답 생성
+                    else if (curr_event->filter == EVFILT_WRITE) { // 클라이언트 소켓이고, WRITE 이벤트가 생겼을 경우
                         uintptr_t   serv_fd;
-                        Response    res;
-                        std::string return_value;
-                        std::vector<int> is_ok;
-                        size_t  i;
-                        size_t  index;
+                        size_t      index;
 
-                        serv_fd = clients[curr_event->ident]; // 서버 객체에 접근할 서버 소켓값 추출
+                        serv_fd = clients[curr_event->ident];
                         for (index = 0; index < servers.size(); ++index) {
                             if (serv_fd == servers[index].getServerSocket()) {
                                 break;
                             }
                         }
-                        processRequest(this->connects[curr_event->ident]);
-                        return_value = checkReturnValue(servers[index], connects[curr_event->ident].getPath());
-                        if (return_value != "") {
-                            responses[curr_event->ident].setReturnValue(return_value);
-                            responses[curr_event->ident].setStatusCode(307);
+                        size_t res = sendResponse(curr_event->ident, servers[index], connects[curr_event->ident].getPath(), responses[curr_event->ident]);
+                        if (res == WRITE_FINISH) {
+                            change_events(curr_event->ident, EVFILT_READ, EV_ENABLE); // 클라이언트 READ 이벤트 활성화
+                            change_events(curr_event->ident, EVFILT_WRITE, EV_DISABLE); // 클아이언트 WRITE 이벤트 비활성화
+                            connects[curr_event->ident].clearAll(); // 응답을 보냈으므로 안쪽 내용 초기화
+                            responses[curr_event->ident].clearAll();
+                            std::cout << "response ok" << std::endl;
                         }
-                        if (this->connects[curr_event->ident].getMethod() == "DELETE"){
-                            urlSearch(this->connects[curr_event->ident], servers[index].getLocations());
-                        }
-                        for (i = 0; i < servers[index].getLocations().size(); i++) {
-                            if (connects[curr_event->ident].getPath() == servers[index].getLocations()[i].getPath())
-                                break;
-                        }
-                        if (i == servers[index].getLocations().size()){
-                           res.setStatusCode(404);
-                        }
-                        else {
-                           is_ok = servers[index].getLocations()[i].getMethods(); // is_ok의 경우 각 Method 권한을 가지고 있음. 0일 경우 접근 불가, 1일 경우 접근 가능
-                        }
-                        if (is_ok.size() > 0) { // 접근할 수 있는 Method가 있을 경우
-                            // 각 메소드 및 권한을 파악하여 응답 생성
-                            if (this->connects[curr_event->ident].getMethod() == "GET" && is_ok[0] > 0) {
-                                std::string cgi_str = cgi_differentiation(servers[index].getMemberRepository(), connects[curr_event->ident]);
-                                responses[curr_event->ident].setCgiStr(cgi_str);
-                                std::string body = makeBody(servers[index], connects[curr_event->ident].getPath(), servers[index].getLocations()[index], res);
-                                std::string send_message = buildResponse(body, servers[index].getLocations()[index], servers[index], res.getStatusCode());
-                            }
-                            else if (this->connects[curr_event->ident].getMethod() == "POST"&& is_ok[1] > 0) {
-                                std::string cgi_str = cgi_differentiation(servers[index].getMemberRepository(), connects[curr_event->ident]);
-                                std::string str = connects[curr_event->ident].getHeaders() + "\r\n\r\n" + connects[curr_event->ident].getBody();
-                                char *buf = const_cast<char *>(str.c_str());
-                                if (GetComplete(buf, servers[index].getMemberRepository())){
-                                   if (std::strstr(buf, "_method=delete") && is_ok[2] > 0)
-                                       delete_member_true(buf, servers[index].getMemberRepository());
-                                   else 
-                                       save_true(buf, servers[index].getMemberRepository());
-                                }
-                                responses[curr_event->ident].setCgiStr(cgi_str);
-                            }
-                            else if (this->connects[curr_event->ident].getMethod() == "DELETE"&& is_ok[2] > 0) {
-                                std::string path = "./" + servers[index].getRoot() + connects[curr_event->ident].getPath() + connects[curr_event->ident].getBody();
-                                executeMethodDelete(path, responses[curr_event->ident]);
-                            }
-                        }
-                        if (this->connects[curr_event->ident].getMethod().size() == 0) {
-                            responses[curr_event->ident].setStatusCode(405);
-                            std::string body = makeBody(servers[index], connects[curr_event->ident].getPath(), servers[index].getLocations()[index], res);
-                            std::string send_message = buildResponse(body, servers[index].getLocations()[index], servers[index], res.getStatusCode());
-                        }
-                        // 응답 생성까지 끝났으므로
-                        change_events(curr_event->ident, EVFILT_READ, EV_DISABLE); // 클라이언트 READ 이벤트 비활성화
-                        change_events(curr_event->ident, EVFILT_WRITE, EV_ENABLE); // 클라이언트 소켓 WRITE 이벤트 활성화
-                    }  
-                }
-                else if (curr_event->filter == EVFILT_WRITE) { // 클라이언트 소켓이고, WRITE 이벤트가 생겼을 경우
-                    uintptr_t   serv_fd;
-                    size_t      index;
-
-                    serv_fd = clients[curr_event->ident];
-                    for (index = 0; index < servers.size(); ++index) {
-                        if (serv_fd == servers[index].getServerSocket()) {
-                            break;
-                        }
-                    }
-                    size_t res = sendResponse(curr_event->ident, servers[index], connects[curr_event->ident].getPath(), responses[curr_event->ident]);
-                    if (res == WRITE_FINISH) {
-                        change_events(curr_event->ident, EVFILT_READ, EV_ENABLE); // 클라이언트 READ 이벤트 활성화
-                        change_events(curr_event->ident, EVFILT_WRITE, EV_DISABLE); // 클아이언트 WRITE 이벤트 비활성화
-                        connects[curr_event->ident].clearAll(); // 응답을 보냈으므로 안쪽 내용 초기화
-                        responses[curr_event->ident].clearAll();
-                        std::cout << "response ok" << std::endl;
                     }
                 }
             }
+            curr_event = NULL;
+        } catch (std::exception& e) {
+            std::cout << e.what() << std::endl;
+            std::cout << 'server re-start' << std::endl;
         }
-        curr_event = NULL;
     }
 }
