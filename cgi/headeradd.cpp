@@ -42,9 +42,10 @@ std::string get_header(int status, std::string &content){
 
 void 		head_plus (std::string &content, int status, char *buf, MemberRepository *mr){
 	std::string cookie;
-	if (GetUrl(buf) == "/members/logins" && get_cookie(buf, mr).getById().length() != 0)
+	if (((GetUrl(buf) == "/members/logins" || GetUrl(buf) == "/members/new" ) && get_cookie(buf, mr).getById().length() != 0) || \
+		(GetUrl(buf) == "/members/del" && get_cookie(buf, mr).getById() == getValue(buf, "id=")))
 		cookie = "Set-Cookie: expires=Thu, 01-Jan-1970 00:00:01; GMT path=/";
-	else { 
+	else if (GetUrl(buf) == "/members/logins" && get_cookie(buf, mr).getById().length() == 0){ 
 		cookie = cookie_add(buf, mr);
 	}
     std::string response_header = get_header(status, content);
