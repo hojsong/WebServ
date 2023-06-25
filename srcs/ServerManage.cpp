@@ -541,6 +541,7 @@ void    ServerManage::runServer(void) {
                     /*
                     if (time_diff(connects[curr_event->ident].getTime()) > 60000000LL){
                         타임아웃처리
+                        쏴주고 나서 다시 클리어;
                     }
                     */
                     if (connects[curr_event->ident].getState() == READ_FINISH) { // 데이터를 모두 읽었을 경우 본문 응답 생성
@@ -626,6 +627,7 @@ void    ServerManage::runServer(void) {
                         change_events(curr_event->ident, EVFILT_READ, EV_ENABLE); // 클라이언트 READ 이벤트 활성화
                         change_events(curr_event->ident, EVFILT_WRITE, EV_DISABLE); // 클아이언트 WRITE 이벤트 비활성화
                         connects[curr_event->ident].clearAll(); // 응답을 보냈으므로 안쪽 내용 초기화
+                        //connects 여기서 타임도 초기화
                         responses[curr_event->ident].clearAll();
                         std::cout << "response ok" << std::endl;
                     }
