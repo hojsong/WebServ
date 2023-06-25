@@ -134,3 +134,17 @@ std::string hj_cgi_execve(char *buf, MemberRepository *mr){
 	return cgi_output;
 }
 
+long long time_diff(const timeval& clientTime){
+    timeval end;
+    gettimeofday(&end, NULL);
+
+    long long diff = (end.tv_sec - clientTime.tv_sec) * 1000000LL;  // 초 단위 차이를 마이크로초 단위로 변환
+
+    diff += end.tv_usec - clientTime.tv_usec;
+
+    // if (diff > 60000000LL) {
+    //     diff = 60000000LL;
+    // }
+
+    return diff;
+}

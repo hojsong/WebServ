@@ -503,6 +503,7 @@ void    ServerManage::runServer(void) {
                             std::string temp_data(buffer.begin(), buffer.end());
                             size_t pos = temp_data.find("\r\n\r\n"); // 헤더와 본문을 구문하는 구분자는 \r\n\r\n
                             if (pos == std::string::npos) { // pos가 npos라는 뜻은 본문이 존재하지 않는 요청
+                                // connects[curr_event->ident].setTime();
                                 connects[curr_event->ident].appendHeader(temp_data);
                             }
                             else { // 본문을 읽는데
@@ -537,6 +538,11 @@ void    ServerManage::runServer(void) {
                     else {
                         continue ; // 추후 다시 접근
                     }
+                    /*
+                    if (time_diff(connects[curr_event->ident].getTime()) > 60000000LL){
+                        타임아웃처리
+                    }
+                    */
                     if (connects[curr_event->ident].getState() == READ_FINISH) { // 데이터를 모두 읽었을 경우 본문 응답 생성
                         uintptr_t   serv_fd;
                         Response    res;
