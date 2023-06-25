@@ -1,1 +1,0 @@
-id=admin&password=admin&name=관리자&grade=2&
