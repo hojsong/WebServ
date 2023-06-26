@@ -499,11 +499,11 @@ void    ServerManage::runServer(void) {
                     // len > 0 : 읽을 데이터 있음, len == -1 : 아직 데이터 수신을 완료하지 못했을 수 있으므로 다시 접근, len == 0 : 클라이언트와의 접근이 끊김(close)
                     if (len > 0) {
                         buffer.resize(len);
+                        connects[curr_event->ident].setTime();
                         if (connects[curr_event->ident].getState() == HEADER_READ) { // State 초기 설정값은 HEADER_READ임
                             std::string temp_data(buffer.begin(), buffer.end());
                             size_t pos = temp_data.find("\r\n\r\n"); // 헤더와 본문을 구문하는 구분자는 \r\n\r\n
                             if (pos == std::string::npos) { // pos가 npos라는 뜻은 본문이 존재하지 않는 요청
-                                // connects[curr_event->ident].setTime();
                                 connects[curr_event->ident].appendHeader(temp_data);
                             }
                             else { // 본문을 읽는데
@@ -540,8 +540,12 @@ void    ServerManage::runServer(void) {
                     }
                     /*
                     if (time_diff(connects[curr_event->ident].getTime()) > 60000000LL){
-                        타임아웃처리
-                        쏴주고 나서 다시 클리어;
+                        
+                        change_events(curr_event->ident, EVFILT_READ, EV_ENABLE); // 클라이언트 READ 이벤트 활성화
+                        change_events(curr_event->ident, EVFILT_WRITE, EV_DISABLE); // 클아이언트 WRITE 이벤트 비활성화
+                        connects[curr_event->ident].clearAll(); // 응답을 보냈으므로 안쪽 내용 초기화
+                        responses[curr_event->ident].clearAll();
+                        std::cout << "time out" << std::endl;
                     }
                     */
                     if (connects[curr_event->ident].getState() == READ_FINISH) { // 데이터를 모두 읽었을 경우 본문 응답 생성
@@ -627,7 +631,6 @@ void    ServerManage::runServer(void) {
                         change_events(curr_event->ident, EVFILT_READ, EV_ENABLE); // 클라이언트 READ 이벤트 활성화
                         change_events(curr_event->ident, EVFILT_WRITE, EV_DISABLE); // 클아이언트 WRITE 이벤트 비활성화
                         connects[curr_event->ident].clearAll(); // 응답을 보냈으므로 안쪽 내용 초기화
-                        //connects 여기서 타임도 초기화
                         responses[curr_event->ident].clearAll();
                         std::cout << "response ok" << std::endl;
                     }

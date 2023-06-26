@@ -8,6 +8,7 @@ Request::Request(void) {
     host = "";
     connection = "";
     body = "";
+    requestStart = NULL;
 }
 
 Request::~Request(void) {}
@@ -47,6 +48,11 @@ void    Request::setState(int state) {
 
 void    Request::setServerFd(uintptr_t serv_fd) {
     this->serv_fd = serv_fd;
+}
+
+void    Request::setTime(void){
+    if (requestStart == NULL)
+        gettimeofday(this->requestStart, NULL);
 }
 
 //getter
@@ -94,6 +100,10 @@ uintptr_t    Request::getServerFd(void) {
     return serv_fd;
 }
 
+struct timeval  *Request::getTime(void){
+    return (requestStart);
+}
+
 void    Request::appendHeader(std::string data) {
     this->headers.append(data);
 }
@@ -111,4 +121,5 @@ void    Request::clearAll(void) {
     host = "";
     connection = "";
     body = "";
+    requestStart = NULL;
 }

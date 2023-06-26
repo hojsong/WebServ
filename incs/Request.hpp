@@ -19,6 +19,8 @@ class   Request {
         std::map<std::string, std::string> header_data;
         std::string connection;
         std::string body;
+        struct timeval *requestStart;
+
     public:
         Request(void);
         ~Request();
@@ -33,6 +35,7 @@ class   Request {
         void    setBody(std::string param);
         void    setState(int state);
         void    setServerFd(uintptr_t serv_fd);
+        void    setTime(void);
 
         //getter
         std::string                         getMethod(void);
@@ -45,12 +48,12 @@ class   Request {
         std::string                         getBody(void);
         int                                 getState(void);
         uintptr_t                           getServerFd(void);
+        struct timeval                      *getTime(void);
 
         std::string     makeHeader(void);
         void            appendHeader(std::string data);
         void            appendBody(std::string data);
         void            clearAll(void);
-
 };
 
 #endif
