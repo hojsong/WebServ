@@ -218,6 +218,11 @@ size_t  sendResponse(int client_fd, Server &server, std::string req_path, Respon
             write(client_fd, response.c_str(), response.size());
             return WRITE_FINISH;
         }
+        else if (res.getStatusCode() == 504) {
+            response = "HTTP/1.1 504 Gateway Timeout\r\nContent-Length: 21\r\nContent-Type: text/plain\r\n\r\nGateway Timeout: 504\r\n";
+            write(client_fd, response.c_str(), response.size());
+            return WRITE_FINISH;
+        }
         else if (res.getStatusCode() > 400) { // 원래는 200
             body = makeBody(server, req_path, locs[0], res);
             response = buildResponse(body, locs[0], server, res.getStatusCode());
@@ -496,10 +501,10 @@ void    ServerManage::runServer(void) {
                 // 클라이언트 소켓일 경우 Reqeust를 읽어야 하기 때문에 아래 else if 문으로 접근(else문의 curr_event->ident는 모두 클라이언트 소켓임)
                     std::vector<char> buffer(BUFFER_SIZE);
                     ssize_t len = readData(curr_event->ident, buffer.data(), BUFFER_SIZE);
+                    connects[curr_event->ident].setTime();
                     // len > 0 : 읽을 데이터 있음, len == -1 : 아직 데이터 수신을 완료하지 못했을 수 있으므로 다시 접근, len == 0 : 클라이언트와의 접근이 끊김(close)
                     if (len > 0) {
                         buffer.resize(len);
-                        connects[curr_event->ident].setTime();
                         if (connects[curr_event->ident].getState() == HEADER_READ) { // State 초기 설정값은 HEADER_READ임
                             std::string temp_data(buffer.begin(), buffer.end());
                             size_t pos = temp_data.find("\r\n\r\n"); // 헤더와 본문을 구문하는 구분자는 \r\n\r\n
@@ -538,16 +543,13 @@ void    ServerManage::runServer(void) {
                     else {
                         continue ; // 추후 다시 접근
                     }
-                    /*
-                    if (time_diff(connects[curr_event->ident].getTime()) > 60000000LL){
-                        
-                        change_events(curr_event->ident, EVFILT_READ, EV_ENABLE); // 클라이언트 READ 이벤트 활성화
-                        change_events(curr_event->ident, EVFILT_WRITE, EV_DISABLE); // 클아이언트 WRITE 이벤트 비활성화
-                        connects[curr_event->ident].clearAll(); // 응답을 보냈으므로 안쪽 내용 초기화
-                        responses[curr_event->ident].clearAll();
+                    if (time_diff(connects[curr_event->ident].getTime()) > 60000000){ // timeout일 경우
+                        responses[curr_event->ident].setStatusCode(504); // 504 상태코드 세팅
+                        change_events(curr_event->ident, EVFILT_READ, EV_DISABLE); // 클라이언트 READ 이벤트 비활성화
+                        change_events(curr_event->ident, EVFILT_WRITE, EV_ENABLE); // 클라이언트 소켓 WRITE 이벤트 활성화
                         std::cout << "time out" << std::endl;
+                        continue;
                     }
-                    */
                     if (connects[curr_event->ident].getState() == READ_FINISH) { // 데이터를 모두 읽었을 경우 본문 응답 생성
                         uintptr_t   serv_fd;
                         Response    res;

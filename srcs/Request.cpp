@@ -51,8 +51,12 @@ void    Request::setServerFd(uintptr_t serv_fd) {
 }
 
 void    Request::setTime(void){
-    if (requestStart == NULL)
-        gettimeofday(this->requestStart, NULL);
+    struct timeval start;
+
+     if (requestStart == NULL) {
+        gettimeofday(&start, NULL);
+        requestStart = &start;
+    }
 }
 
 //getter

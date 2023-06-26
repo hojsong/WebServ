@@ -18,6 +18,6 @@ std::string getValue(char *buf, const char *value);
 int			getButton(char *buf);
 bool 		GetComplete(char *buf, MemberRepository *mr);
 std::string handle_cgi(std::string cgiPath, Request req);
-long long	time_diff(const timeval& clientTime);
+long long	time_diff(const timeval* clientTime);
 
 #endif

@@ -89,7 +89,7 @@ std::string cgi_differentiation(MemberRepository *mr, Request req){
         result = hj_cgi_execve(buf, mr);
     else if (url == "/members/logins") 
         result = hj_cgi_execve(buf, mr);
-    else if (url == "/upload/file")
+    else if (method == 2 && url == "/upload/file")
         result = hj_cgi_execve(buf, mr);
     else if (method == 2) {
         result = handle_cgi("cgi-bin/image_cgi.py", req);
@@ -134,13 +134,13 @@ std::string hj_cgi_execve(char *buf, MemberRepository *mr){
 	return cgi_output;
 }
 
-long long time_diff(const timeval& clientTime){
+long long time_diff(const timeval* clientTime){
     timeval end;
     gettimeofday(&end, NULL);
 
-    long long diff = (end.tv_sec - clientTime.tv_sec) * 1000000LL;  // 초 단위 차이를 마이크로초 단위로 변환
+    long long diff = (end.tv_sec - clientTime->tv_sec) * 1000000;  // 초 단위 차이를 마이크로초 단위로 변환
 
-    diff += end.tv_usec - clientTime.tv_usec;
+    diff += end.tv_usec - clientTime->tv_usec;
 
     // if (diff > 60000000LL) {
     //     diff = 60000000LL;

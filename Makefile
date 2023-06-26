@@ -36,7 +36,6 @@ OBJS = $(SRCS:.cpp=.o)
 OBCS = $(CGIS:.cpp=.o)
 
 all : $(NAME) $(NAME2)
-	@mkdir html/file
 
 %.o : %.cpp
 	@$(CXX) $(FLAG) -I $(INCS) -c $< -o $@
@@ -46,6 +45,9 @@ $(NAME) : $(OBJS) $(INCS)
 
 $(NAME2) : $(OBCS) $(CNCS)
 	@$(CXX) $(FLAG) -I $(CNCS) -o $(NAME2) $(OBCS)
+
+file : 
+	@mkdir html/file
 
 clean :
 	@$(RM) $(OBJS)
