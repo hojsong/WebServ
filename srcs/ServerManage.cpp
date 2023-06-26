@@ -309,7 +309,7 @@ std::string handle_cgi(std::string cgiPath, Request req) {
 
 
 		std::string contentLength = "CONTENT_LENGTH=" + std::to_string(req.getBody().size());
-        std::string pythonPath = "/Users/hojsong/.brew/lib/python3.11/site-packages";  // PIL 모듈이 설치된 디렉토리 경로로 변경해야 합니다.
+        std::string pythonPath = "/Users/hojsong/.brew/lib/python3.11/site-packages";
         std::string pythonPathEnv = "PYTHONPATH=" + pythonPath;
         char* pythonPathEnvPtr = new char[pythonPathEnv.size() + 1];
         std::strcpy(pythonPathEnvPtr, pythonPathEnv.c_str());
