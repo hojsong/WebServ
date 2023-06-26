@@ -309,7 +309,7 @@ std::string handle_cgi(std::string cgiPath, Request req) {
 
 
 		std::string contentLength = "CONTENT_LENGTH=" + std::to_string(req.getBody().size());
-        std::string pythonPath = "/Users/seongmpa/.brew/lib/python3.11/site-packages";  // PIL 모듈이 설치된 디렉토리 경로로 변경해야 합니다.
+        std::string pythonPath = "/Users/hojsong/.brew/lib/python3.11/site-packages";  // PIL 모듈이 설치된 디렉토리 경로로 변경해야 합니다.
         std::string pythonPathEnv = "PYTHONPATH=" + pythonPath;
         char* pythonPathEnvPtr = new char[pythonPathEnv.size() + 1];
         std::strcpy(pythonPathEnvPtr, pythonPathEnv.c_str());
@@ -498,6 +498,13 @@ void    ServerManage::runServer(void) {
             }
             else { // false일 경우 클라이언트 소켓 값
                 if (curr_event->filter == EVFILT_READ) {
+                    if (connects[curr_event->ident].getTime() != NULL && time_diff(connects[curr_event->ident].getTime()) > 60000000){ // timeout일 경우
+                        responses[curr_event->ident].setStatusCode(504); // 504 상태코드 세팅
+                        change_events(curr_event->ident, EVFILT_READ, EV_DISABLE); // 클라이언트 READ 이벤트 비활성화
+                        change_events(curr_event->ident, EVFILT_WRITE, EV_ENABLE); // 클라이언트 소켓 WRITE 이벤트 활성화
+                        std::cout << "time out" << std::endl;
+                        continue;
+                    }
                 // 클라이언트 소켓일 경우 Reqeust를 읽어야 하기 때문에 아래 else if 문으로 접근(else문의 curr_event->ident는 모두 클라이언트 소켓임)
                     std::vector<char> buffer(BUFFER_SIZE);
                     ssize_t len = readData(curr_event->ident, buffer.data(), BUFFER_SIZE);
@@ -543,7 +550,7 @@ void    ServerManage::runServer(void) {
                     else {
                         continue ; // 추후 다시 접근
                     }
-                    if (time_diff(connects[curr_event->ident].getTime()) > 60000000){ // timeout일 경우
+                    if (connects[curr_event->ident].getTime() != NULL && time_diff(connects[curr_event->ident].getTime()) > 60000000){ // timeout일 경우
                         responses[curr_event->ident].setStatusCode(504); // 504 상태코드 세팅
                         change_events(curr_event->ident, EVFILT_READ, EV_DISABLE); // 클라이언트 READ 이벤트 비활성화
                         change_events(curr_event->ident, EVFILT_WRITE, EV_ENABLE); // 클라이언트 소켓 WRITE 이벤트 활성화
