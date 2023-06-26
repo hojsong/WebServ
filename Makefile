@@ -59,6 +59,6 @@ fclean : clean
 	@rm -rf memberdb.txt
 	@rm -rf html/file
 
-re : fclean all
+re : fclean all file
 
-.PHONY : all  clean fclean re
+.PHONY : all  clean fclean file re
