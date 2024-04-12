@@ -1,4 +1,4 @@
-#Webserv 과제
+Webserv 과제
 과제 요약
 C++98 을 이용한 HTTP 서버 구현
 config 파일 작성 및 이를 이용한 서버 설정
